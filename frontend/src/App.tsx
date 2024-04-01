@@ -1,4 +1,4 @@
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, MouseEvent, useState } from "react";
 import "./App.css";
 
 function App() {
@@ -14,7 +14,8 @@ function App() {
   const handleResponse = () => {};
   const handleError = () => {};
 
-  const handleSumit = () => {
+  const handleSubmit = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     if (file) {
       const url = "/api/file/upload";
       const formData = new FormData();
@@ -31,14 +32,14 @@ function App() {
 
   return (
     <div className="App">
-      <form action="">
+      <form>
         <input
           type="file"
           name="img_upload"
           id="img_upload"
           onChange={handleChange}
         />
-        <button onClick={handleSumit}>Upload</button>
+        <button onClick={handleSubmit}>Upload</button>
       </form>
     </div>
   );
