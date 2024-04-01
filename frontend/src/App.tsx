@@ -16,7 +16,7 @@ function App() {
 
   const handleSumit = () => {
     if (file) {
-      const url = "/api/uploadFile";
+      const url = "/api/file/upload";
       const formData = new FormData();
       formData.append("file", file);
       formData.append("fileName", file.name);

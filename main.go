@@ -10,11 +10,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// func index(w http.ResponseWriter, r *http.Request) {
-// 	// w.Write([]byte("Hello World"))
-// 	http.FileServer(http.Dir("frontend/build"))
-// }
-
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -23,7 +18,6 @@ func main() {
 	serverPort := os.Getenv("SERVER_PORT")
 
 	mux := http.NewServeMux()
-	// mux.HandleFunc("/", index)
 	mux.Handle("/", http.FileServer(http.Dir("frontend/build")))
 	http.ListenAndServe(":"+serverPort, mux)
 }
