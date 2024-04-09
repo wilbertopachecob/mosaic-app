@@ -109,27 +109,24 @@ function App() {
               </button>
             </form>
           </div>
-          <div className="col-sm">
-            <div className="d-flex flex-column">
-              <img
-                src={
-                  mosaicImg
-                    ? `data:image/jpeg;base64,${mosaicImg}`
-                    : imgPlaceholder
-                }
-                alt="mosaic"
-                width="25%"
-              />
-              <span>{duration} seconds</span>
-              <a
-                href={`data:image/jpeg;base64,${mosaicImg}`}
-                download={`mosaic-version-${file?.name}`}
-                className={`btn btn-success ${mosaicImg ? "" : "disabled"}`}
-                style={{ width: "fit-content" }}
-              >
-                Download
-              </a>
-            </div>
+          <div className="col-sm d-flex flex-column">
+            <img
+              src={
+                mosaicImg
+                  ? `data:image/jpeg;base64,${mosaicImg}`
+                  : imgPlaceholder
+              }
+              alt="mosaic"
+            />
+            <span>{duration} seconds</span>
+            <a
+              href={mosaicImg ? `data:image/jpeg;base64,${mosaicImg}` : "#"}
+              download={`mosaic-version-${file?.name}`}
+              className={`btn btn-success ${mosaicImg ? "" : "disabled"}`}
+              style={{ width: "fit-content" }}
+            >
+              Download
+            </a>
           </div>
         </div>
       </div>
