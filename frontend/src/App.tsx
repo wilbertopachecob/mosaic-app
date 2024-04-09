@@ -74,13 +74,13 @@ function App() {
               alt="preview"
               ref={previewImg}
             />
-            <form>
+            <form className="mt-3">
               <input
                 type="file"
                 name="imgUpload"
                 id="imgUpload"
                 onChange={handleChange}
-                className="form-control-file mt-1"
+                className="form-control"
               />
               <div className="form-group mt-1">
                 <label htmlFor="tileSize">Select tile size</label>
