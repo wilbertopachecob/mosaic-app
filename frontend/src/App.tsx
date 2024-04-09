@@ -1,5 +1,6 @@
 import { ChangeEvent, MouseEvent, useEffect, useRef, useState } from "react";
 import imgPlaceholder from "./assets/img/img_placeholder.png";
+import MosaicImgContainer from "./components/MosaicImgContainer";
 
 type APIResponse = {
   mosaicImg: string;
@@ -109,25 +110,11 @@ function App() {
               </button>
             </form>
           </div>
-          <div className="col-sm d-flex flex-column">
-            <img
-              src={
-                mosaicImg
-                  ? `data:image/jpeg;base64,${mosaicImg}`
-                  : imgPlaceholder
-              }
-              alt="mosaic"
-            />
-            <span>{duration} seconds</span>
-            <a
-              href={mosaicImg ? `data:image/jpeg;base64,${mosaicImg}` : "#"}
-              download={`mosaic-version-${file?.name}`}
-              className={`btn btn-success ${mosaicImg ? "" : "disabled"}`}
-              style={{ width: "fit-content" }}
-            >
-              Download
-            </a>
-          </div>
+          <MosaicImgContainer
+            duration={duration}
+            mosaicImg={mosaicImg}
+            fileName={file?.name}
+          />
         </div>
       </div>
     </div>
