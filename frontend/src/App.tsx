@@ -1,4 +1,5 @@
-import { ChangeEvent, MouseEvent, useState } from "react";
+import { ChangeEvent, MouseEvent, useEffect, useRef, useState } from "react";
+import imgPlaceholder from "./assets/img/img_placeholder.png";
 
 type APIResponse = {
   mosaicImg: string;
@@ -10,14 +11,27 @@ function App() {
   const [tileSize, setTileSize] = useState<string>("10");
 
   const [mosaicImg, setMosaicImg] = useState<string>();
-  const [duration, setDuration] = useState<number>();
+  const [duration, setDuration] = useState<number>(0);
+  const previewImg = useRef<HTMLImageElement>(null);
 
-  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+  useEffect(() => {
+    if (file && previewImg && previewImg.current !== null) {
+      const reader = new FileReader();
+
+      reader.onload = function (e) {
+        previewImg.current!.setAttribute("src", e.target?.result as string);
+      };
+
+      reader.readAsDataURL(file as Blob);
+    }
+  }, [file]);
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const target = event.target;
     if (target && target.files!.length > 0) {
       setFile(target.files![0]);
     }
-  }
+  };
 
   const handleResponse = async (response: Response) => {
     try {
@@ -28,6 +42,7 @@ function App() {
       console.log(error);
     }
   };
+
   const handleError = () => {};
 
   const handleSubmit = (e: MouseEvent<HTMLButtonElement>) => {
@@ -49,27 +64,34 @@ function App() {
     <div className="d-flex justify-content-center mt-5">
       <div className="container">
         <div className="row">
-          <div className="col-sm">
+          <h1>Mosaic App</h1>
+        </div>
+        <div className="row">
+          <div className="col-sm d-flex flex-column">
+            <img
+              src={imgPlaceholder}
+              id="preview"
+              alt="preview"
+              ref={previewImg}
+            />
             <form>
               <input
                 type="file"
                 name="imgUpload"
                 id="imgUpload"
                 onChange={handleChange}
-                className="form-control-file"
+                className="form-control-file mt-1"
               />
-              <div className="form-group">
+              <div className="form-group mt-1">
                 <label htmlFor="tileSize">Select tile size</label>
                 <select
                   name="tileSize"
                   id="tileSize"
                   onChange={(e) => setTileSize(e.target.value)}
                   value={tileSize}
-                  className="form-control"
+                  className="form-select"
                 >
-                  <option value="10" selected>
-                    10
-                  </option>
+                  <option value="10">10</option>
                   <option value="15">15</option>
                   <option value="20">20</option>
                   <option value="25">25</option>
@@ -80,31 +102,34 @@ function App() {
               <button
                 onClick={handleSubmit}
                 type="submit"
-                className="btn btn-primary"
+                className="btn btn-primary mt-1"
+                disabled={!file}
               >
                 Upload
               </button>
             </form>
           </div>
           <div className="col-sm">
-            {mosaicImg && (
-              <div className="d-flex flex-column">
-                <img
-                  src={`data:image/jpeg;base64,${mosaicImg}`}
-                  alt="mosaic"
-                  width="25%"
-                />
-                <span>{duration} seconds</span>
-                <a
-                  href={`data:image/jpeg;base64,${mosaicImg}`}
-                  download={`mosaic-version-${file?.name}`}
-                  className="btn btn-success"
-                  style={{ width: "fit-content" }}
-                >
-                  Download
-                </a>
-              </div>
-            )}
+            <div className="d-flex flex-column">
+              <img
+                src={
+                  mosaicImg
+                    ? `data:image/jpeg;base64,${mosaicImg}`
+                    : imgPlaceholder
+                }
+                alt="mosaic"
+                width="25%"
+              />
+              <span>{duration} seconds</span>
+              <a
+                href={`data:image/jpeg;base64,${mosaicImg}`}
+                download={`mosaic-version-${file?.name}`}
+                className={`btn btn-success ${mosaicImg ? "" : "disabled"}`}
+                style={{ width: "fit-content" }}
+              >
+                Download
+              </a>
+            </div>
           </div>
         </div>
       </div>
