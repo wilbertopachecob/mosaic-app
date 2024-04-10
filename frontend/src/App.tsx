@@ -1,6 +1,7 @@
-import { ChangeEvent, MouseEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import imgPlaceholder from "./assets/img/img_placeholder.png";
 import MosaicImgContainer from "./components/MosaicImgContainer";
+import UploadForm from "./components/UploadForm";
 
 type APIResponse = {
   mosaicImg: string;
@@ -27,13 +28,6 @@ function App() {
     }
   }, [file]);
 
-  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const target = event.target;
-    if (target && target.files!.length > 0) {
-      setFile(target.files![0]);
-    }
-  };
-
   const handleResponse = async (response: Response) => {
     try {
       const data = (await response.json()) as APIResponse;
@@ -46,8 +40,7 @@ function App() {
 
   const handleError = () => {};
 
-  const handleSubmit = (e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     if (file) {
       const url = "/api/file/upload";
       const formData = new FormData();
@@ -75,40 +68,13 @@ function App() {
               alt="preview"
               ref={previewImg}
             />
-            <form className="mt-3">
-              <input
-                type="file"
-                name="imgUpload"
-                id="imgUpload"
-                onChange={handleChange}
-                className="form-control"
-              />
-              <div className="form-group mt-1">
-                <label htmlFor="tileSize">Select tile size</label>
-                <select
-                  name="tileSize"
-                  id="tileSize"
-                  onChange={(e) => setTileSize(e.target.value)}
-                  value={tileSize}
-                  className="form-select"
-                >
-                  <option value="10">10</option>
-                  <option value="15">15</option>
-                  <option value="20">20</option>
-                  <option value="25">25</option>
-                  <option value="50">50</option>
-                  <option value="100">100</option>
-                </select>
-              </div>
-              <button
-                onClick={handleSubmit}
-                type="submit"
-                className="btn btn-primary mt-1"
-                disabled={!file}
-              >
-                Upload
-              </button>
-            </form>
+            <UploadForm
+              selectedTileSize={tileSize}
+              isBtnDisabled={!file}
+              handleSubmit={handleSubmit}
+              handleFileChange={setFile}
+              handleTileSizeChange={setTileSize}
+            />
           </div>
           <MosaicImgContainer
             duration={duration}
