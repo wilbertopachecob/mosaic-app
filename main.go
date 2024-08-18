@@ -19,7 +19,7 @@ func main() {
 	mux := routes()
 
 	TILESDB = tiles_db.TilesDB()
-	fmt.Println("Mosaic server started")
+	fmt.Println("Mosaic server started at http://localhost:" + serverPort)
 	http.ListenAndServe(":"+serverPort, mux)
 }
 
