@@ -14,8 +14,8 @@ then run
 ```
 go build
 ```
-That command should create an executable in your local folder's root called mosaic, in a termianl execute that file
+That command should create an executable in your local folder's root called mosaic, in a terminal execute that file
 ```
 ./mosaic
 ```
-The front end folder contains a README to run and create all required files
+The front end folder contains a [README](/frontend/README.md) to run and create all required files
