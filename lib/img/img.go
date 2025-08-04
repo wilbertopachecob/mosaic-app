@@ -21,13 +21,34 @@ func AverageColor(img image.Image) [3]float64 {
 }
 
 // Resize resizes an image to a new width while maintaining aspect ratio
+// This matches the original working implementation from the MVP commit
 func Resize(in image.Image, newWidth int) image.NRGBA {
 	bounds := in.Bounds()
+	
+	// Handle edge cases to prevent division by zero
+	if newWidth <= 0 {
+		newWidth = 1
+	}
+	if bounds.Dx() <= 0 {
+		return *image.NewNRGBA(image.Rect(0, 0, 1, 1))
+	}
+	
 	ratio := bounds.Dx() / newWidth
-	out := image.NewNRGBA(image.Rect(bounds.Min.X/ratio, bounds.Min.X/ratio, bounds.Max.X/ratio, bounds.Max.Y/ratio))
+	if ratio <= 0 {
+		ratio = 1
+	}
+	
+	// Calculate new dimensions
+	newHeight := bounds.Dy() / ratio
+	if newHeight <= 0 {
+		newHeight = 1
+	}
+	
+	out := image.NewNRGBA(image.Rect(0, 0, newWidth, newHeight))
 
-	for y, j := bounds.Min.Y, bounds.Min.Y; y < bounds.Max.Y; y, j = y+ratio, j+1 {
-		for x, i := bounds.Min.X, bounds.Min.X; i < bounds.Max.X; x, i = x+ratio, i+1 {
+	// Resize by sampling pixels - this is the key difference from the broken version
+	for y, j := bounds.Min.Y, 0; y < bounds.Max.Y && j < newHeight; y, j = y+ratio, j+1 {
+		for x, i := bounds.Min.X, 0; x < bounds.Max.X && i < newWidth; x, i = x+ratio, i+1 {
 			r, g, b, a := in.At(x, y).RGBA()
 			out.SetNRGBA(i, j, color.NRGBA{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), uint8(a >> 8)})
 		}

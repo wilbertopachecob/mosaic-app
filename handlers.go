@@ -98,7 +98,7 @@ func generateMosaic(original image.Image, tileSize int) (string, error) {
 	// Source point for drawing
 	sourcePoint := image.Point{0, 0}
 
-	// Process image tile by tile - using original algorithm
+	// Process image tile by tile - using original algorithm with single pixel sampling
 	for y := bounds.Min.Y; y < bounds.Max.Y; y += tileSize {
 		for x := bounds.Min.X; x < bounds.Max.X; x += tileSize {
 			// Get color from original image at this position (single pixel sampling)
@@ -109,9 +109,11 @@ func generateMosaic(original image.Image, tileSize int) (string, error) {
 			nearestFileByColor := imgpkg.Nearest(color, &db)
 
 			// If no tile found (database empty), refill it
-			if nearestFileByColor == "" && len(db) == 0 {
+			if nearestFileByColor == "" {
 				db = tiles_db.CloneTilesDB(tilesDB)
-				nearestFileByColor = imgpkg.Nearest(color, &db)
+				if len(db) > 0 {
+					nearestFileByColor = imgpkg.Nearest(color, &db)
+				}
 			}
 
 			// Process the tile
