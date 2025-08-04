@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import imgPlaceholder from "./assets/img/img_placeholder.png";
 import MosaicImgContainer from "./components/MosaicImgContainer";
 import UploadForm from "./components/UploadForm";
-import LoadingSpinner from "./components/LoadingSpinner";
 import ErrorMessage from "./components/ErrorMessage";
 
 // Type definitions for better type safety
@@ -101,123 +100,92 @@ function App() {
     }
   }, [file, tileSize, handleResponse, handleError]);
 
-  // Reset the application state
-  const handleReset = useCallback(() => {
-    setFile(null);
-    setMosaicImg(null);
-    setDuration(0);
-    setAppState('idle');
-    setError(null);
-    if (previewImg.current) {
-      previewImg.current.src = imgPlaceholder;
-    }
-  }, []);
+  // Format file size for display
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   return (
-    <div className="min-vh-100 bg-light">
-      <div className="container py-5">
+    <div className="App">
+      <div className="container">
         {/* Header */}
-        <div className="row mb-4">
-          <div className="col-12 text-center">
-            <h1 className="display-4 fw-bold text-primary mb-2">
-              🎨 Mosaic Generator
-            </h1>
-            <p className="lead text-muted">
-              Transform your images into beautiful mosaics using our AI-powered tile matching
-            </p>
-          </div>
-        </div>
+        <header className="app-header fade-in">
+          <h1 className="app-title">
+            <i className="fas fa-palette"></i>
+            Mosaic Generator
+          </h1>
+          <p className="app-subtitle">
+            Transform your images into beautiful mosaics using AI-powered tile matching
+          </p>
+        </header>
 
         {/* Main Content */}
-        <div className="row g-4">
-          {/* Left Column - Upload and Preview */}
-          <div className="col-lg-6">
-            <div className="card shadow-sm h-100">
-              <div className="card-header bg-primary text-white">
-                <h5 className="mb-0">
-                  <i className="fas fa-upload me-2"></i>
-                  Upload Image
-                </h5>
-              </div>
-              <div className="card-body d-flex flex-column">
-                {/* Image Preview */}
-                <div className="text-center mb-3">
-                  <img
-                    src={imgPlaceholder}
-                    alt="Preview"
-                    ref={previewImg}
-                    className="img-fluid rounded shadow-sm"
-                    style={{ maxHeight: '300px', objectFit: 'contain' }}
-                  />
+        <div className="main-content">
+          {/* Upload Section */}
+          <div className="card slide-up">
+            <h2 className="card-title">
+              <i className="fas fa-upload"></i>
+              Upload Image
+            </h2>
+            
+            <div className="image-container">
+              <img
+                src={imgPlaceholder}
+                id="preview"
+                alt="preview"
+                ref={previewImg}
+              />
+            </div>
+
+            {file && (
+              <div className="stats-container slide-up">
+                <div className="stat-item">
+                  <i className="fas fa-file-image"></i>
+                  <span>File: {file.name}</span>
                 </div>
-
-                {/* Upload Form */}
-                <UploadForm
-                  selectedTileSize={tileSize}
-                  isBtnDisabled={!file || appState === 'loading'}
-                  handleSubmit={handleSubmit}
-                  handleFileChange={setFile}
-                  handleTileSizeChange={setTileSize}
-                  isLoading={appState === 'loading'}
-                />
-
-                {/* Error Display */}
-                {error && (
-                  <ErrorMessage 
-                    message={error} 
-                    onDismiss={() => setError(null)} 
-                  />
-                )}
+                <div className="stat-item">
+                  <i className="fas fa-weight-hanging"></i>
+                  <span>Size: {formatFileSize(file.size)}</span>
+                </div>
               </div>
-            </div>
+            )}
+
+            <UploadForm
+              selectedTileSize={tileSize}
+              isBtnDisabled={!file || appState === 'loading'}
+              handleSubmit={handleSubmit}
+              handleFileChange={setFile}
+              handleTileSizeChange={setTileSize}
+              isLoading={appState === 'loading'}
+            />
+
+            {error && (
+              <ErrorMessage 
+                message={error} 
+                onDismiss={() => {
+                  setError(null);
+                  setAppState('idle');
+                }}
+              />
+            )}
           </div>
 
-          {/* Right Column - Mosaic Result */}
-          <div className="col-lg-6">
-            <div className="card shadow-sm h-100">
-              <div className="card-header bg-success text-white">
-                <h5 className="mb-0">
-                  <i className="fas fa-image me-2"></i>
-                  Mosaic Result
-                </h5>
-              </div>
-              <div className="card-body d-flex flex-column">
-                {appState === 'loading' && (
-                  <div className="text-center py-5">
-                    <LoadingSpinner />
-                    <p className="mt-3 text-muted">Generating your mosaic...</p>
-                  </div>
-                )}
-                
-                {appState === 'success' && mosaicImg && (
-                  <MosaicImgContainer
-                    duration={duration}
-                    mosaicImg={mosaicImg}
-                    fileName={file?.name}
-                    onReset={handleReset}
-                  />
-                )}
-                
-                {appState === 'idle' && (
-                  <div className="text-center py-5 text-muted">
-                    <i className="fas fa-image fa-3x mb-3"></i>
-                    <p>Upload an image to generate your mosaic</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="row mt-5">
-          <div className="col-12 text-center">
-            <p className="text-muted small">
-              Built with React, TypeScript, and Go • 
-              <a href="https://github.com/your-repo" className="text-decoration-none ms-1">
-                View on GitHub
-              </a>
-            </p>
+          {/* Result Section */}
+          <div className="card slide-up">
+            <h2 className="card-title">
+              <i className="fas fa-image"></i>
+              Mosaic Result
+            </h2>
+            
+            <MosaicImgContainer
+              duration={duration}
+              mosaicImg={mosaicImg}
+              fileName={file?.name}
+            />
           </div>
         </div>
       </div>
