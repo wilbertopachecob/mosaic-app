@@ -14,17 +14,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"wilbertopachecob/mosaic/lib/img"
 	"wilbertopachecob/mosaic/lib/tiles_db"
 	"wilbertopachecob/mosaic/models"
+
+	"github.com/sirupsen/logrus"
 )
 
 // mosaicHandler handles the mosaic generation request
 // It processes an uploaded image and creates a mosaic using tiles from the database
 func mosaicHandler(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
-	
+
 	// Set response headers
 	w.Header().Set("Content-Type", "application/json")
 
@@ -73,10 +74,10 @@ func mosaicHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"format":    format,
-		"tileSize":  tileSize,
-		"fileSize":  header.Size,
-		"fileName":  header.Filename,
+		"format":   format,
+		"tileSize": tileSize,
+		"fileSize": header.Size,
+		"fileName": header.Filename,
 	}).Info("Processing mosaic request")
 
 	// Generate mosaic
@@ -119,15 +120,32 @@ func generateMosaic(original image.Image, tileSize int) (string, error) {
 	// Process image tile by tile
 	for y := bounds.Min.Y; y < bounds.Max.Y; y += tileSize {
 		for x := bounds.Min.X; x < bounds.Max.X; x += tileSize {
-			// Get color from original image at this position
-			r, g, b, _ := original.At(x, y).RGBA()
-			color := [3]float64{float64(r), float64(g), float64(b)}
+			// Calculate the bounds for this tile piece
+			endX := x + tileSize
+			endY := y + tileSize
+			
+			// Ensure we don't go beyond image bounds
+			if endX > bounds.Max.X {
+				endX = bounds.Max.X
+			}
+			if endY > bounds.Max.Y {
+				endY = bounds.Max.Y
+			}
+			
+			// Calculate average color of this tile-sized piece
+			avgColor := calculateAverageColor(original, x, y, endX, endY)
 			
 			// Find nearest tile by color
-			nearestFileByColor := img.Nearest(color, &db)
+			nearestFileByColor := img.Nearest(avgColor, &db)
+			
+			// If no tile found (database empty), refill it
+			if nearestFileByColor == "" && len(db) == 0 {
+				db = tiles_db.CloneTilesDB(tilesDB)
+				nearestFileByColor = img.Nearest(avgColor, &db)
+			}
 			
 			// Open and process the tile
-			if err := processTile(nearestFileByColor, newImage, x, y, tileSize, sourcePoint); err != nil {
+			if err := processTile(nearestFileByColor, newImage, x, y, endX-x, endY-y, sourcePoint); err != nil {
 				logrus.WithError(err).WithField("tile", nearestFileByColor).Warn("Failed to process tile")
 			}
 		}
@@ -137,8 +155,40 @@ func generateMosaic(original image.Image, tileSize int) (string, error) {
 	return encodeImageToBase64(newImage)
 }
 
+// calculateAverageColor calculates the average color of a rectangular region
+func calculateAverageColor(img image.Image, startX, startY, endX, endY int) [3]float64 {
+	var r, g, b float64
+	pixelCount := 0
+
+	for y := startY; y < endY; y++ {
+		for x := startX; x < endX; x++ {
+			r1, g1, b1, _ := img.At(x, y).RGBA()
+			r += float64(r1)
+			g += float64(g1)
+			b += float64(b1)
+			pixelCount++
+		}
+	}
+
+	if pixelCount == 0 {
+		return [3]float64{0, 0, 0}
+	}
+
+	return [3]float64{r / float64(pixelCount), g / float64(pixelCount), b / float64(pixelCount)}
+}
+
 // processTile processes a single tile and draws it onto the mosaic
-func processTile(tilePath string, newImage *image.NRGBA, x, y, tileSize int, sourcePoint image.Point) error {
+func processTile(tilePath string, newImage *image.NRGBA, x, y, width, height int, sourcePoint image.Point) error {
+	if tilePath == "" {
+		// If no tile found, fill with black
+		for py := y; py < y+height; py++ {
+			for px := x; px < x+width; px++ {
+				newImage.Set(px, py, image.Black)
+			}
+		}
+		return nil
+	}
+
 	file, err := os.Open(tilePath)
 	if err != nil {
 		return fmt.Errorf("failed to open tile file: %w", err)
@@ -150,28 +200,28 @@ func processTile(tilePath string, newImage *image.NRGBA, x, y, tileSize int, sou
 		return fmt.Errorf("failed to decode tile image: %w", err)
 	}
 
-	// Resize tile to match tile size
-	resizedTile := img.Resize(tileImg, tileSize)
+	// Resize tile to match the target dimensions
+	resizedTile := img.Resize(tileImg, width)
 	tile := resizedTile.SubImage(resizedTile.Bounds())
-	
+
 	// Define tile bounds
-	tileBounds := image.Rect(x, y, x+tileSize, y+tileSize)
-	
+	tileBounds := image.Rect(x, y, x+width, y+height)
+
 	// Draw tile onto mosaic
 	draw.Draw(newImage, tileBounds, tile, sourcePoint, draw.Src)
-	
+
 	return nil
 }
 
 // encodeImageToBase64 encodes an image to base64 string
 func encodeImageToBase64(img image.Image) (string, error) {
 	var buf bytes.Buffer
-	
+
 	// Encode as JPEG with quality 90
 	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 90}); err != nil {
 		return "", fmt.Errorf("failed to encode image: %w", err)
 	}
-	
+
 	// Convert to base64
 	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
 }
@@ -183,7 +233,7 @@ func sendErrorResponse(w http.ResponseWriter, statusCode int, message, details s
 		Message: details,
 		Code:    statusCode,
 	}
-	
+
 	w.WriteHeader(statusCode)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		logrus.WithError(err).Error("Failed to encode error response")

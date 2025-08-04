@@ -85,6 +85,11 @@ func Nearest(target [3]float64, db *map[string][3]float64) string {
 	var filename string
 	smallest := math.MaxFloat64
 	
+	// If database is empty, return empty string
+	if len(*db) == 0 {
+		return ""
+	}
+	
 	for k, v := range *db {
 		dist := Distance(target, v)
 		if dist < smallest {
