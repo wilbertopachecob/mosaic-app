@@ -32,14 +32,34 @@ func AverageColor(img image.Image) [3]float64 {
 func Resize(in image.Image, newWidth int) image.NRGBA {
 	bounds := in.Bounds()
 	
+	// Handle edge cases
+	if newWidth <= 0 {
+		newWidth = 1
+	}
+	
+	originalWidth := bounds.Dx()
+	originalHeight := bounds.Dy()
+	
+	// Handle zero dimensions
+	if originalWidth <= 0 || originalHeight <= 0 {
+		// Return a 1x1 pixel image if original is invalid
+		out := image.NewNRGBA(image.Rect(0, 0, 1, 1))
+		out.Set(0, 0, color.Black)
+		return *out
+	}
+	
 	// Calculate resize ratio
-	ratio := bounds.Dx() / newWidth
+	ratio := originalWidth / newWidth
 	if ratio <= 0 {
 		ratio = 1 // Prevent division by zero
 	}
 	
 	// Calculate new dimensions
-	newHeight := bounds.Dy() / ratio
+	newHeight := originalHeight / ratio
+	if newHeight <= 0 {
+		newHeight = 1
+	}
+	
 	out := image.NewNRGBA(image.Rect(0, 0, newWidth, newHeight))
 
 	// Resize by sampling pixels
