@@ -61,7 +61,7 @@ func mosaic(w http.ResponseWriter, r *http.Request) {
 	original, _, _ := image.Decode(file)
 	bounds := original.Bounds()
 
-	newImage := image.NewNRGBA(image.Rect(bounds.Min.X, bounds.Min.X, bounds.Max.X, bounds.Max.Y))
+	newImage := image.NewNRGBA(image.Rect(bounds.Min.X, bounds.Min.Y, bounds.Max.X, bounds.Max.Y))
 	db := cloneTilesDB()
 
 	sourcePoint := image.Point{0, 0}
@@ -122,11 +122,26 @@ func averageColor(img image.Image) [3]float64 {
 
 func resize(in image.Image, newWidth int) image.NRGBA {
 	bounds := in.Bounds()
-	ratio := bounds.Dx() / newWidth
-	out := image.NewNRGBA(image.Rect(bounds.Min.X/ratio, bounds.Min.X/ratio, bounds.Max.X/ratio, bounds.Max.Y/ratio))
+	
+	// Prevent division by zero
+	if newWidth <= 0 {
+		newWidth = 1
+	}
+	
+	originalWidth := bounds.Dx()
+	if originalWidth <= 0 {
+		originalWidth = 1
+	}
+	
+	ratio := originalWidth / newWidth
+	if ratio <= 0 {
+		ratio = 1
+	}
+	
+	out := image.NewNRGBA(image.Rect(0, 0, newWidth, bounds.Dy()/ratio))
 
-	for y, j := bounds.Min.Y, bounds.Min.Y; y < bounds.Max.Y; y, j = y+ratio, j+1 {
-		for x, i := bounds.Min.X, bounds.Min.X; i < bounds.Max.X; x, i = x+ratio, i+1 {
+	for y, j := bounds.Min.Y, 0; y < bounds.Max.Y && j < bounds.Dy()/ratio; y, j = y+ratio, j+1 {
+		for x, i := bounds.Min.X, 0; x < bounds.Max.X && i < newWidth; x, i = x+ratio, i+1 {
 			r, g, b, a := in.At(x, y).RGBA()
 			out.SetNRGBA(i, j, color.NRGBA{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), uint8(a >> 8)})
 		}
@@ -186,4 +201,15 @@ func cloneTilesDB() map[string][3]float64 {
 		db[k] = v
 	}
 	return db
+}
+
+func routes() *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/file/upload", mosaic)
+	
+	// Serve static files from frontend build
+	fs := http.FileServer(http.Dir("frontend/build"))
+	mux.Handle("/", fs)
+	
+	return mux
 }
