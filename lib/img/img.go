@@ -6,113 +6,55 @@ import (
 	"math"
 )
 
-// AverageColor calculates the average RGB color of an image
-// Returns a [3]float64 array representing [R, G, B] values
+// AverageColor calculates the average color of an image
 func AverageColor(img image.Image) [3]float64 {
 	bounds := img.Bounds()
 	r, g, b := 0.0, 0.0, 0.0
-	
-	// Sum all pixel values
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			r1, g1, b1, _ := img.At(x, y).RGBA()
-			r += float64(r1)
-			g += float64(g1)
-			b += float64(b1)
+		for i := bounds.Min.X; i < bounds.Max.X; i++ {
+			r1, g1, b1, _ := img.At(i, y).RGBA()
+			r, g, b = r+float64(r1), g+float64(g1), b+float64(b1)
 		}
 	}
-	
-	// Calculate average
 	totalPixels := float64(bounds.Max.X * bounds.Max.Y)
 	return [3]float64{r / totalPixels, g / totalPixels, b / totalPixels}
 }
 
 // Resize resizes an image to a new width while maintaining aspect ratio
-// Returns a new NRGBA image with the specified width
 func Resize(in image.Image, newWidth int) image.NRGBA {
 	bounds := in.Bounds()
-	
-	// Handle edge cases
-	if newWidth <= 0 {
-		newWidth = 1
-	}
-	
-	originalWidth := bounds.Dx()
-	originalHeight := bounds.Dy()
-	
-	// Handle zero dimensions
-	if originalWidth <= 0 || originalHeight <= 0 {
-		// Return a 1x1 pixel image if original is invalid
-		out := image.NewNRGBA(image.Rect(0, 0, 1, 1))
-		out.Set(0, 0, color.Black)
-		return *out
-	}
-	
-	// Calculate resize ratio
-	ratio := originalWidth / newWidth
-	if ratio <= 0 {
-		ratio = 1 // Prevent division by zero
-	}
-	
-	// Calculate new dimensions
-	newHeight := originalHeight / ratio
-	if newHeight <= 0 {
-		newHeight = 1
-	}
-	
-	out := image.NewNRGBA(image.Rect(0, 0, newWidth, newHeight))
+	ratio := bounds.Dx() / newWidth
+	out := image.NewNRGBA(image.Rect(bounds.Min.X/ratio, bounds.Min.X/ratio, bounds.Max.X/ratio, bounds.Max.Y/ratio))
 
-	// Resize by sampling pixels
-	for y, j := bounds.Min.Y, 0; y < bounds.Max.Y && j < newHeight; y, j = y+ratio, j+1 {
-		for x, i := bounds.Min.X, 0; x < bounds.Max.X && i < newWidth; x, i = x+ratio, i+1 {
+	for y, j := bounds.Min.Y, bounds.Min.Y; y < bounds.Max.Y; y, j = y+ratio, j+1 {
+		for x, i := bounds.Min.X, bounds.Min.X; i < bounds.Max.X; x, i = x+ratio, i+1 {
 			r, g, b, a := in.At(x, y).RGBA()
-			out.SetNRGBA(i, j, color.NRGBA{
-				uint8(r >> 8),
-				uint8(g >> 8),
-				uint8(b >> 8),
-				uint8(a >> 8),
-			})
+			out.SetNRGBA(i, j, color.NRGBA{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), uint8(a >> 8)})
 		}
 	}
-	
 	return *out
 }
 
-// Nearest finds the tile with the closest color match to the target color
-// Removes the found tile from the database to avoid reuse
-// Returns the filename of the nearest matching tile
+// Nearest finds the nearest color match in the database and removes it
 func Nearest(target [3]float64, db *map[string][3]float64) string {
 	var filename string
-	smallest := math.MaxFloat64
-	
-	// If database is empty, return empty string
-	if len(*db) == 0 {
-		return ""
-	}
-	
+	smallest := 1000000.0
 	for k, v := range *db {
 		dist := Distance(target, v)
 		if dist < smallest {
 			filename, smallest = k, dist
 		}
 	}
-	
-	// Remove the selected tile from database to avoid reuse
-	if filename != "" {
-		delete(*db, filename)
-	}
-	
+	delete(*db, filename)
 	return filename
 }
 
-// Distance calculates the Euclidean distance between two RGB color points
-// Returns the distance as a float64
+// Distance calculates the Euclidean distance between two color points
 func Distance(p1 [3]float64, p2 [3]float64) float64 {
 	return math.Sqrt(Sq(p2[0]-p1[0]) + Sq(p2[1]-p1[1]) + Sq(p2[2]-p1[2]))
 }
 
 // Sq calculates the square of a number
-// Helper function for distance calculations
 func Sq(n float64) float64 {
 	return n * n
 }
