@@ -1,110 +1,191 @@
-import { ChangeEvent, MouseEvent, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import imgPlaceholder from "./assets/img/img_placeholder.png";
+import MosaicImgContainer from "./components/MosaicImgContainer";
+import UploadForm from "./components/UploadForm";
+import ErrorMessage from "./components/ErrorMessage";
 
-type APIResponse = {
+// Type definitions for better type safety
+interface APIResponse {
   mosaicImg: string;
   duration: number;
-};
+}
+
+interface APIError {
+  error: string;
+  message: string;
+  code: number;
+}
+
+// App states for better UX
+type AppState = 'idle' | 'loading' | 'success' | 'error';
 
 function App() {
-  const [file, setFile] = useState<File>();
-  const [tileSize, setTileSize] = useState<string>("10");
+  // State management
+  const [file, setFile] = useState<File | null>(null);
+  const [tileSize, setTileSize] = useState<string>("20");
+  const [mosaicImg, setMosaicImg] = useState<string | null>(null);
+  const [duration, setDuration] = useState<number>(0);
+  const [appState, setAppState] = useState<AppState>('idle');
+  const [error, setError] = useState<string | null>(null);
+  
+  // Refs
+  const previewImg = useRef<HTMLImageElement>(null);
 
-  const [mosaicImg, setMosaicImg] = useState<string>();
-  const [duration, setDuration] = useState<number>();
-
-  function handleChange(event: ChangeEvent<HTMLInputElement>) {
-    const target = event.target;
-    if (target && target.files!.length > 0) {
-      setFile(target.files![0]);
+  // Update preview image when file changes
+  useEffect(() => {
+    if (file && previewImg.current) {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        if (previewImg.current && e.target?.result) {
+          previewImg.current.src = e.target.result as string;
+        }
+      };
+      
+      reader.onerror = () => {
+        setError("Failed to read the selected file");
+        setAppState('error');
+      };
+      
+      reader.readAsDataURL(file);
     }
-  }
+  }, [file]);
 
-  const handleResponse = async (response: Response) => {
+  // Handle API response
+  const handleResponse = useCallback(async (response: Response) => {
+    if (!response.ok) {
+      const errorData: APIError = await response.json();
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+    
+    const data: APIResponse = await response.json();
+    setMosaicImg(data.mosaicImg);
+    setDuration(data.duration);
+    setAppState('success');
+    setError(null);
+  }, []);
+
+  // Handle API errors
+  const handleError = useCallback((error: Error) => {
+    console.error("API Error:", error);
+    setError(error.message || "An unexpected error occurred");
+    setAppState('error');
+  }, []);
+
+  // Handle form submission
+  const handleSubmit = useCallback(async () => {
+    if (!file) {
+      setError("Please select a file first");
+      setAppState('error');
+      return;
+    }
+
+    setAppState('loading');
+    setError(null);
+
     try {
-      const data = (await response.json()) as APIResponse;
-      setMosaicImg(data.mosaicImg);
-      setDuration(data.duration);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-  const handleError = () => {};
-
-  const handleSubmit = (e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    if (file) {
-      const url = "/api/file/upload";
       const formData = new FormData();
       formData.append("imgUpload", file);
       formData.append("fileName", file.name);
-      formData.append("tileSize", tileSize!);
+      formData.append("tileSize", tileSize);
 
-      fetch(url, { method: "POST", body: formData })
-        .then(handleResponse)
-        .catch(handleError);
+      const response = await fetch("/api/file/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      await handleResponse(response);
+    } catch (error) {
+      handleError(error as Error);
     }
+  }, [file, tileSize, handleResponse, handleError]);
+
+  // Format file size for display
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
-    <div className="d-flex justify-content-center mt-5">
+    <div className="App">
       <div className="container">
-        <div className="row">
-          <div className="col-sm">
-            <form>
-              <input
-                type="file"
-                name="imgUpload"
-                id="imgUpload"
-                onChange={handleChange}
-                className="form-control-file"
+        {/* Header */}
+        <header className="app-header fade-in">
+          <h1 className="app-title">
+            <i className="fas fa-palette"></i>
+            Mosaic Generator
+          </h1>
+          <p className="app-subtitle">
+            Transform your images into beautiful mosaics using AI-powered tile matching
+          </p>
+        </header>
+
+        {/* Main Content */}
+        <div className="main-content">
+          {/* Upload Section */}
+          <div className="card slide-up">
+            <h2 className="card-title">
+              <i className="fas fa-upload"></i>
+              Upload Image
+            </h2>
+            
+            <div className="image-container">
+              <img
+                src={imgPlaceholder}
+                id="preview"
+                alt="preview"
+                ref={previewImg}
               />
-              <div className="form-group">
-                <label htmlFor="tileSize">Select tile size</label>
-                <select
-                  name="tileSize"
-                  id="tileSize"
-                  onChange={(e) => setTileSize(e.target.value)}
-                  value={tileSize}
-                  className="form-control"
-                >
-                  <option value="10" selected>
-                    10
-                  </option>
-                  <option value="15">15</option>
-                  <option value="20">20</option>
-                  <option value="25">25</option>
-                  <option value="50">50</option>
-                  <option value="100">100</option>
-                </select>
-              </div>
-              <button
-                onClick={handleSubmit}
-                type="submit"
-                className="btn btn-primary"
-              >
-                Upload
-              </button>
-            </form>
-          </div>
-          <div className="col-sm">
-            {mosaicImg && (
-              <div className="d-flex flex-column">
-                <img
-                  src={`data:image/jpeg;base64,${mosaicImg}`}
-                  alt="mosaic"
-                  width="25%"
-                />
-                <span>{duration} seconds</span>
-                <a
-                  href={`data:image/jpeg;base64,${mosaicImg}`}
-                  download={`mosaic-version-${file?.name}`}
-                  className="btn btn-success"
-                  style={{ width: "fit-content" }}
-                >
-                  Download
-                </a>
+            </div>
+
+            {file && (
+              <div className="stats-container slide-up">
+                <div className="stat-item">
+                  <i className="fas fa-file-image"></i>
+                  <span>File: {file.name}</span>
+                </div>
+                <div className="stat-item">
+                  <i className="fas fa-weight-hanging"></i>
+                  <span>Size: {formatFileSize(file.size)}</span>
+                </div>
               </div>
             )}
+
+            <UploadForm
+              selectedTileSize={tileSize}
+              isBtnDisabled={!file || appState === 'loading'}
+              handleSubmit={handleSubmit}
+              handleFileChange={setFile}
+              handleTileSizeChange={setTileSize}
+              isLoading={appState === 'loading'}
+            />
+
+            {error && (
+              <ErrorMessage 
+                message={error} 
+                onDismiss={() => {
+                  setError(null);
+                  setAppState('idle');
+                }}
+              />
+            )}
+          </div>
+
+          {/* Result Section */}
+          <div className="card slide-up">
+            <h2 className="card-title">
+              <i className="fas fa-image"></i>
+              Mosaic Result
+            </h2>
+            
+            <MosaicImgContainer
+              duration={duration}
+              mosaicImg={mosaicImg}
+              fileName={file?.name}
+            />
           </div>
         </div>
       </div>

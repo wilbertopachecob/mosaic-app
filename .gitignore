@@ -20,3 +20,6 @@ tiles
 
 # Go workspace file
 go.work
+
+# executable
+mosaic
