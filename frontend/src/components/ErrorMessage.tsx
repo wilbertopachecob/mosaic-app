@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { AlertCircle, AlertTriangle, Info, X } from "lucide-react";
 
-interface ErrorMessageProps {
+type ErrorMessageProps = {
   message: string;
   onDismiss?: () => void;
   type?: "error" | "warning" | "info";

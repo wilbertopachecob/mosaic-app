@@ -16,7 +16,7 @@ import {
   Wand2,
 } from "lucide-react";
 
-interface UploadFormProps {
+type UploadFormProps = {
   selectedTileSize: string;
   selectedBlend: string;
   isBtnDisabled: boolean;

@@ -9,10 +9,10 @@ import React, {
 
 type Theme = "light" | "dark";
 
-interface ThemeContextValue {
+type ThemeContextValue = {
   theme: Theme;
   toggleTheme: () => void;
-}
+};
 
 const STORAGE_KEY = "mosaic-theme";
 

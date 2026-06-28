@@ -11,7 +11,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 
-interface MosaicImgContainerProps {
+type MosaicImgContainerProps = {
   mosaicImg: string | null;
   duration: number;
   fileName: string | undefined;

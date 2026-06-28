@@ -7,16 +7,16 @@ import ErrorMessage from "./components/ErrorMessage";
 import HeaderControls from "./components/HeaderControls";
 import "./App.css";
 
-interface APIResponse {
+type APIResponse = {
   mosaicImg: string;
   duration: number;
-}
+};
 
-interface APIError {
+type APIError = {
   error: string;
   message: string;
   code: number;
-}
+};
 
 type AppState = "idle" | "loading" | "success" | "error";
 
@@ -125,6 +125,8 @@ function App() {
     [t]
   );
 
+  const isLoading = appState === "loading";
+
   return (
     <main className="app-shell">
       <div className="workspace">
@@ -181,12 +183,12 @@ function App() {
             <UploadForm
               selectedTileSize={tileSize}
               selectedBlend={blend}
-              isBtnDisabled={!file || appState === "loading"}
+              isBtnDisabled={!file || isLoading}
               handleSubmit={handleSubmit}
               handleFileChange={handleFileChange}
               handleTileSizeChange={setTileSize}
               handleBlendChange={setBlend}
-              isLoading={appState === "loading"}
+              isLoading={isLoading}
             />
 
             {error && (
@@ -214,7 +216,7 @@ function App() {
               fileName={file?.name}
               tileSize={tileSize}
               blend={blend}
-              isLoading={appState === "loading"}
+              isLoading={isLoading}
               hasSourceImage={Boolean(file)}
               onReset={handleReset}
             />
