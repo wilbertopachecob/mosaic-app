@@ -25,7 +25,7 @@ describe("ErrorMessage", () => {
   });
 
   it("calls onDismiss when the close button is clicked", () => {
-    const onDismiss = jest.fn();
+    const onDismiss = vi.fn();
     renderWithProviders(
       <ErrorMessage message="Dismiss me" onDismiss={onDismiss} />
     );

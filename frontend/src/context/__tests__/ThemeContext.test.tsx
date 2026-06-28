@@ -18,12 +18,12 @@ describe("getInitialTheme", () => {
   });
 
   it("falls back to system preference when nothing is stored", () => {
-    window.matchMedia = jest.fn().mockImplementation((query: string) => ({
-      matches: query === "(prefers-color-scheme: dark)",
-      media: query,
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-    }));
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: query === "(prefers-color-scheme: dark)",
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }));
 
     expect(getInitialTheme()).toBe("dark");
   });

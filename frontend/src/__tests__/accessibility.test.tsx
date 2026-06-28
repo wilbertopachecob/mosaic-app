@@ -12,10 +12,10 @@ const uploadFormProps = {
   selectedBlend: "0.42",
   isBtnDisabled: false,
   isLoading: false,
-  handleSubmit: jest.fn(),
-  handleFileChange: jest.fn(),
-  handleTileSizeChange: jest.fn(),
-  handleBlendChange: jest.fn(),
+  handleSubmit: vi.fn(),
+  handleFileChange: vi.fn(),
+  handleTileSizeChange: vi.fn(),
+  handleBlendChange: vi.fn(),
 };
 
 describe("accessibility", () => {
@@ -46,7 +46,7 @@ describe("accessibility", () => {
   it("ErrorMessage has no axe violations", async () => {
     await expectNoA11yViolations(
       renderWithProviders(
-        <ErrorMessage message="Something went wrong" onDismiss={jest.fn()} />
+        <ErrorMessage message="Something went wrong" onDismiss={vi.fn()} />
       )
     );
   });
@@ -61,7 +61,7 @@ describe("accessibility", () => {
           blend="0.42"
           isLoading={false}
           hasSourceImage={false}
-          onReset={jest.fn()}
+          onReset={vi.fn()}
         />
       )
     );
@@ -78,7 +78,7 @@ describe("accessibility", () => {
           blend="0.42"
           isLoading={false}
           hasSourceImage
-          onReset={jest.fn()}
+          onReset={vi.fn()}
         />
       )
     );

@@ -72,7 +72,7 @@ describe("MosaicImgContainer", () => {
   });
 
   it("calls onReset when the reset button is clicked", () => {
-    const onReset = jest.fn();
+    const onReset = vi.fn();
     renderWithProviders(
       <MosaicImgContainer
         {...defaultProps}

@@ -54,4 +54,4 @@ import logoLockupLight from "@/assets/logo-lockup-light.svg";
 import { useTheme } from "@/context/ThemeContext";
 ```
 
-The alias is configured in `frontend/craco.config.js` and `frontend/tsconfig.json`.
+The alias is configured in `frontend/vite.config.ts` and `frontend/tsconfig.json`.

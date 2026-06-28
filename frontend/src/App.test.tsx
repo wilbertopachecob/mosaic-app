@@ -3,13 +3,13 @@ import '@testing-library/jest-dom';
 import App from '@/App';
 import { renderWithProviders } from '@/testUtils';
 
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 beforeEach(() => {
   mockFetch.mockReset();
-  URL.createObjectURL = jest.fn(() => 'blob:preview');
-  URL.revokeObjectURL = jest.fn();
+  URL.createObjectURL = vi.fn(() => 'blob:preview');
+  URL.revokeObjectURL = vi.fn();
 });
 
 test('renders mosaic generator logo', () => {

@@ -5,10 +5,10 @@ import UploadForm from '@/components/UploadForm';
 import { renderWithProviders } from '@/testUtils';
 
 // Mock functions
-const mockHandleSubmit = jest.fn();
-const mockHandleFileChange = jest.fn();
-const mockHandleTileSizeChange = jest.fn();
-const mockHandleBlendChange = jest.fn();
+const mockHandleSubmit = vi.fn();
+const mockHandleFileChange = vi.fn();
+const mockHandleTileSizeChange = vi.fn();
+const mockHandleBlendChange = vi.fn();
 
 const defaultProps = {
   selectedTileSize: '20',
@@ -23,7 +23,7 @@ const defaultProps = {
 
 describe('UploadForm', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders all form elements', () => {
