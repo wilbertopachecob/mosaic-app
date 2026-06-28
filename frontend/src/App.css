@@ -102,6 +102,12 @@ select {
   line-height: 0;
 }
 
+.app-logo-link {
+  display: inline-block;
+  line-height: 0;
+  text-decoration: none;
+}
+
 .app-logo-image {
   display: block;
   width: min(280px, 72vw);

@@ -11,7 +11,9 @@ const Logo: React.FC = () => {
 
   return (
     <h1 className="app-logo">
-      <img src={logoSrc} alt={t("header.title")} className="app-logo-image" />
+      <a href="/" className="app-logo-link">
+        <img src={logoSrc} alt={t("header.title")} className="app-logo-image" />
+      </a>
     </h1>
   );
 };
