@@ -136,6 +136,7 @@ func TestUploadHandlerWithValidRequest(t *testing.T) {
 	part.Write(imgBytes)
 
 	writer.WriteField("tileSize", "20")
+	writer.WriteField("blend", "0.55")
 	writer.Close()
 
 	req, err := http.NewRequest("POST", "/api/file/upload", body)
@@ -177,4 +178,3 @@ func imageToBytes(t *testing.T, img image.Image) []byte {
 	require.NoError(t, err)
 	return buf.Bytes()
 }
-

@@ -7,14 +7,17 @@ import UploadForm from '../UploadForm';
 const mockHandleSubmit = jest.fn();
 const mockHandleFileChange = jest.fn();
 const mockHandleTileSizeChange = jest.fn();
+const mockHandleBlendChange = jest.fn();
 
 const defaultProps = {
   selectedTileSize: '20',
+  selectedBlend: '0.42',
   isBtnDisabled: false,
   isLoading: false,
   handleSubmit: mockHandleSubmit,
   handleFileChange: mockHandleFileChange,
   handleTileSizeChange: mockHandleTileSizeChange,
+  handleBlendChange: mockHandleBlendChange,
 };
 
 describe('UploadForm', () => {
@@ -27,6 +30,7 @@ describe('UploadForm', () => {
     
     expect(screen.getByLabelText(/select image/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/tile size/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/source blend/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /generate mosaic/i })).toBeInTheDocument();
   });
 
@@ -60,6 +64,22 @@ describe('UploadForm', () => {
     expect(mockHandleTileSizeChange).toHaveBeenCalledWith('50');
   });
 
+  it('calls handleBlendChange when blend is changed', () => {
+    render(<UploadForm {...defaultProps} />);
+
+    const blend = screen.getByLabelText(/source blend/i);
+    fireEvent.change(blend, { target: { value: '0.55' } });
+
+    expect(mockHandleBlendChange).toHaveBeenCalledWith('0.55');
+  });
+
+  it('explains source blend in help text', () => {
+    render(<UploadForm {...defaultProps} />);
+
+    expect(screen.getByText(/pure tile mosaic/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/blend help/i)).toHaveAttribute('title', expect.stringContaining('original image'));
+  });
+
   it('calls handleFileChange when file is selected', async () => {
     render(<UploadForm {...defaultProps} />);
     
@@ -91,6 +111,7 @@ describe('UploadForm', () => {
     
     expect(screen.getByLabelText(/select image/i)).toBeDisabled();
     expect(screen.getByRole('combobox')).toBeDisabled();
+    expect(screen.getByLabelText(/source blend/i)).toBeDisabled();
   });
 
   it('shows processing info when loading', () => {

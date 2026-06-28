@@ -23,6 +23,7 @@ function App() {
   // State management
   const [file, setFile] = useState<File | null>(null);
   const [tileSize, setTileSize] = useState<string>("20");
+  const [blend, setBlend] = useState<string>("0.42");
   const [mosaicImg, setMosaicImg] = useState<string | null>(null);
   const [duration, setDuration] = useState<number>(0);
   const [appState, setAppState] = useState<AppState>('idle');
@@ -88,6 +89,7 @@ function App() {
       formData.append("imgUpload", file);
       formData.append("fileName", file.name);
       formData.append("tileSize", tileSize);
+      formData.append("blend", blend);
 
       const response = await fetch("/api/file/upload", {
         method: "POST",
@@ -98,7 +100,7 @@ function App() {
     } catch (error) {
       handleError(error as Error);
     }
-  }, [file, tileSize, handleResponse, handleError]);
+  }, [file, tileSize, blend, handleResponse, handleError]);
 
   // Format file size for display
   const formatFileSize = (bytes: number): string => {
@@ -156,10 +158,12 @@ function App() {
 
             <UploadForm
               selectedTileSize={tileSize}
+              selectedBlend={blend}
               isBtnDisabled={!file || appState === 'loading'}
               handleSubmit={handleSubmit}
               handleFileChange={setFile}
               handleTileSizeChange={setTileSize}
+              handleBlendChange={setBlend}
               isLoading={appState === 'loading'}
             />
 

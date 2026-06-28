@@ -2,20 +2,24 @@ import React, { ChangeEvent, MouseEvent, useCallback } from "react";
 
 interface UploadFormProps {
   selectedTileSize: string;
+  selectedBlend: string;
   isBtnDisabled: boolean;
   isLoading: boolean;
   handleSubmit: () => void;
   handleFileChange: (file: File) => void;
   handleTileSizeChange: (tile: string) => void;
+  handleBlendChange: (blend: string) => void;
 }
 
 const UploadForm: React.FC<UploadFormProps> = ({
   selectedTileSize,
+  selectedBlend,
   isBtnDisabled,
   isLoading,
   handleSubmit,
   handleFileChange,
   handleTileSizeChange,
+  handleBlendChange,
 }) => {
   // Handle form submission
   const onSubmit = useCallback((e: MouseEvent<HTMLButtonElement>) => {
@@ -50,6 +54,13 @@ const UploadForm: React.FC<UploadFormProps> = ({
   const onTileSizeChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
     handleTileSizeChange(event.target.value);
   }, [handleTileSizeChange]);
+
+  // Handle source blend change
+  const onBlendChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    handleBlendChange(event.target.value);
+  }, [handleBlendChange]);
+
+  const blendPercent = Math.round(Number(selectedBlend) * 100);
 
   return (
     <form className="mt-3">
@@ -98,6 +109,39 @@ const UploadForm: React.FC<UploadFormProps> = ({
         </select>
         <div className="form-text">
           Smaller tiles create more detailed mosaics but take longer to process
+        </div>
+      </div>
+
+      {/* Source Blend Selection */}
+      <div className="mb-3">
+        <label htmlFor="blend" className="form-label fw-bold">
+          <i className="fas fa-adjust me-2"></i>
+          Source Blend
+          <i
+            className="fas fa-circle-info ms-2 text-muted"
+            role="img"
+            aria-label="Blend help"
+            title="Controls how much of the original image is blended over the mosaic. Lower values show purer photo tiles; higher values look more like the source image."
+          ></i>
+        </label>
+        <div className="d-flex align-items-center gap-3">
+          <input
+            type="range"
+            name="blend"
+            id="blend"
+            min="0"
+            max="0.75"
+            step="0.01"
+            value={selectedBlend}
+            onChange={onBlendChange}
+            className="form-range"
+            disabled={isLoading}
+            aria-describedby="blendHelp"
+          />
+          <span className="badge bg-secondary">{blendPercent}%</span>
+        </div>
+        <div id="blendHelp" className="form-text">
+          0% is a pure tile mosaic. Higher values preserve faces, edges, and shadows like online mosaic services.
         </div>
       </div>
 

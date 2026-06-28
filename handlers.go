@@ -22,8 +22,10 @@ type Response struct {
 }
 
 // generateMosaic creates a mosaic from the original image and returns base64-encoded JPEG.
-func generateMosaic(original image.Image, tileSize int) (string, error) {
-	mosaicImg, err := mosaicGenerator.Generate(original, tileSize)
+func generateMosaic(original image.Image, tileSize int, blend float64) (string, error) {
+	mosaicImg, err := mosaicGenerator.GenerateWithOptions(original, tileSize, mosaic.Options{
+		SourceBlend: blend,
+	})
 	if err != nil {
 		return "", fmt.Errorf("mosaic generation: %w", err)
 	}
@@ -68,6 +70,14 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		tileSize = 20 // Default tile size
 	}
 
+	blend := mosaic.DefaultOptions().SourceBlend
+	if blendStr := r.FormValue("blend"); blendStr != "" {
+		parsedBlend, err := strconv.ParseFloat(blendStr, 64)
+		if err == nil {
+			blend = parsedBlend
+		}
+	}
+
 	// Decode image
 	img, _, err := image.Decode(file)
 	if err != nil {
@@ -77,10 +87,10 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Generate mosaic
 	// #region agent log
-	mosaic.DebugLog("H0", "before generateMosaic", map[string]interface{}{"tileSize": tileSize, "imgBounds": img.Bounds().String()})
+	mosaic.DebugLog("H0", "before generateMosaic", map[string]interface{}{"tileSize": tileSize, "blend": blend, "imgBounds": img.Bounds().String()})
 	// #endregion
 	start := time.Now()
-	mosaicBase64, err := generateMosaic(img, tileSize)
+	mosaicBase64, err := generateMosaic(img, tileSize, blend)
 	duration := time.Since(start).Seconds()
 	if err != nil {
 		// #region agent log

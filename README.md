@@ -142,6 +142,7 @@ Parameters:
 
 - `imgUpload`: image file
 - `tileSize`: tile size in pixels
+- `blend`: optional original image blend from `0.0` to `1.0`; defaults to `0.42`
 
 Response:
 

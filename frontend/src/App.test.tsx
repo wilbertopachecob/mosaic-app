@@ -20,6 +20,12 @@ test('renders tile size selector', () => {
   expect(tileSizeLabel).toBeInTheDocument();
 });
 
+test('renders source blend control', () => {
+  render(<App />);
+  const blendLabel = screen.getByText(/source blend/i);
+  expect(blendLabel).toBeInTheDocument();
+});
+
 test('renders generate button', () => {
   render(<App />);
   const generateButton = screen.getByText(/generate mosaic/i);
