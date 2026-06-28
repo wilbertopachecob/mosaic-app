@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Images, Sparkles, Wand2 } from "lucide-react";
+import { Images, Wand2 } from "lucide-react";
 import MosaicImgContainer from "./components/MosaicImgContainer";
 import UploadForm from "./components/UploadForm";
 import ErrorMessage from "./components/ErrorMessage";
 import HeaderControls from "./components/HeaderControls";
+import Logo from "./components/Logo";
 import "./App.css";
 
 type APIResponse = {
@@ -132,11 +133,7 @@ function App() {
       <div className="workspace">
         <header className="app-header">
           <div>
-            <div className="eyebrow">
-              <Sparkles size={16} aria-hidden="true" />
-              {t("header.eyebrow")}
-            </div>
-            <h1 className="app-title">{t("header.title")}</h1>
+            <Logo />
             <p className="app-subtitle">{t("header.subtitle")}</p>
           </div>
           <HeaderControls />

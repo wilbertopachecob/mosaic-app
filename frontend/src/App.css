@@ -97,22 +97,15 @@ select {
   margin-bottom: 22px;
 }
 
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--accent);
-  font-size: 0.84rem;
-  font-weight: 650;
-  margin-bottom: 8px;
+.app-logo {
+  margin: 0 0 4px;
+  line-height: 0;
 }
 
-.app-title {
-  margin: 0;
-  font-size: clamp(2rem, 4vw, 3.5rem);
-  line-height: 1;
-  letter-spacing: 0;
-  font-weight: 760;
+.app-logo-image {
+  display: block;
+  width: min(280px, 72vw);
+  height: auto;
 }
 
 .app-subtitle {

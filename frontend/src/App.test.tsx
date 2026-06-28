@@ -3,10 +3,10 @@ import '@testing-library/jest-dom';
 import App from './App';
 import { renderWithProviders } from './testUtils';
 
-test('renders mosaic generator title', () => {
+test('renders mosaic generator logo', () => {
   renderWithProviders(<App />);
-  const titleElement = screen.getByText(/mosaic generator/i);
-  expect(titleElement).toBeInTheDocument();
+  const logoElement = screen.getByRole('img', { name: /mosaic generator/i });
+  expect(logoElement).toBeInTheDocument();
 });
 
 test('renders upload form', () => {
