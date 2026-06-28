@@ -1,7 +1,7 @@
 # Mosaic App Makefile
 # Provides convenient shortcuts for common tasks
 
-.PHONY: help build clean test dev deploy docker production
+.PHONY: help build clean test dev deploy docker production start
 
 # Default target
 help:
@@ -9,6 +9,7 @@ help:
 	@echo "=================================="
 	@echo ""
 	@echo "Development:"
+	@echo "  make start        - Start frontend and backend (./start.sh)"
 	@echo "  make dev-setup    - Setup development environment"
 	@echo "  make dev-start    - Start development servers with hot reloading"
 	@echo "  make dev-test     - Run all tests"
@@ -32,6 +33,11 @@ help:
 	@echo "  make status       - Show deployment status"
 	@echo "  make logs         - Show application logs"
 	@echo "  make stop         - Stop all running services"
+
+# Start frontend and backend together
+start:
+	@chmod +x start.sh
+	@./start.sh
 
 # Development commands
 dev-setup:

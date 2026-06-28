@@ -67,10 +67,47 @@ Supported tile formats:
 
 ## Web App
 
-Run the server:
+### Development (frontend + backend)
+
+Start both the React dev server and the Go API with one command:
 
 ```bash
+./start.sh
+```
+
+Or:
+
+```bash
+make start
+```
+
+This starts:
+
+- Frontend at `http://localhost:3000` (hot reload)
+- Backend API at `http://localhost:8080`
+
+Open `http://localhost:3000` in your browser. API requests from the frontend are proxied to the backend. Press `Ctrl+C` to stop both services.
+
+The script installs frontend dependencies automatically if `frontend/node_modules` is missing.
+
+### Production-style (single server)
+
+Build the frontend and copy it into `dist/build`, then run the Go server:
+
+```bash
+cd frontend
+npm run build
+cd ..
+mkdir -p dist/build
+cp -r frontend/build/. dist/build/
 go run .
+```
+
+Or build everything and run the compiled binary:
+
+```bash
+make build
+./mosaic
 ```
 
 Open:
@@ -168,10 +205,29 @@ mosaic-app/
 ├── tiles/              # Local tile library, ignored by git
 ├── handlers.go         # HTTP handlers
 ├── main.go             # Web server and CLI entry point
+├── start.sh            # Start frontend and backend together
 └── README.md
 ```
 
 ## Development
+
+Start frontend and backend together:
+
+```bash
+./start.sh
+```
+
+Or use the Makefile shortcut:
+
+```bash
+make start
+```
+
+For hot-reloading on the Go backend as well (requires [Air](https://github.com/air-verse/air)):
+
+```bash
+make dev-start
+```
 
 Run tests:
 
