@@ -1,66 +1,163 @@
 package main
 
 import (
-	"context"
+	"flag"
+	"fmt"
+	"image"
+	"image/jpeg"
+	"image/png"
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
+	"path/filepath"
+	"strings"
 
 	"wilbertopachecob/mosaic/config"
-	"wilbertopachecob/mosaic/lib/tiles_db"
+	"wilbertopachecob/mosaic/lib/mosaic"
 )
 
-// Global tiles database - initialized at startup
-var tilesDB map[string][3]float64
+// mosaicGenerator is set at startup and used by uploadHandler.
+var mosaicGenerator *mosaic.Generator
 
-// main is the entry point of the application
 func main() {
-	// Load configuration
 	cfg := config.Load()
-	
-	// Initialize tiles database
-	log.Println("Initializing tiles database...")
-	tilesDB = tiles_db.TilesDB()
-	log.Printf("Tiles database initialized with %d tiles", len(tilesDB))
-
-	// Create router
-	router := routes()
-
-	// Create HTTP server
-	server := &http.Server{
-		Addr:         ":" + cfg.ServerPort,
-		Handler:      router,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  60 * time.Second,
-	}
-
-	// Start server in a goroutine
-	go func() {
-		log.Printf("Mosaic server starting on http://localhost:%s", cfg.ServerPort)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server failed to start: %v", err)
+	cliCfg := parseCLIFlags(cfg.TilesDir)
+	if cliCfg.inputPath != "" {
+		if err := runCLI(cliCfg); err != nil {
+			log.Fatal(err)
 		}
-	}()
-
-	// Wait for interrupt signal to gracefully shutdown the server
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-
-	log.Println("Shutting down server...")
-
-	// Create a deadline for server shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	// Attempt graceful shutdown
-	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+		return
 	}
 
-	log.Println("Server exited gracefully")
+	fmt.Println("Initializing mosaic generator...")
+	mosaicGenerator = mosaic.NewGenerator()
+
+	// Load tiles from configured directory
+	if err := mosaicGenerator.LoadTiles(cfg.TilesDir); err != nil {
+		log.Printf("Warning: Failed to load tiles from %q: %v", cfg.TilesDir, err)
+	} else {
+		fmt.Printf("Loaded %d tiles successfully\n", mosaicGenerator.TileCount())
+	}
+
+	addr := ":" + cfg.ServerPort
+	fmt.Printf("Mosaic server starting on http://localhost%s\n", addr)
+
+	// Set up routes
+	http.HandleFunc("/api/file/upload", uploadHandler)
+	http.HandleFunc("/api/health", healthHandler)
+
+	// Serve static files from the frontend build
+	fs := http.FileServer(http.Dir("dist/build"))
+	http.Handle("/", fs)
+
+	if err := http.ListenAndServe(addr, nil); err != nil {
+		log.Fatalf("Server failed to start: %v", err)
+	}
+}
+
+type cliConfig struct {
+	inputPath  string
+	outputPath string
+	tilesDir   string
+	tileSize   int
+	quality    int
+}
+
+func parseCLIFlags(defaultTilesDir string) cliConfig {
+	var cfg cliConfig
+	flag.StringVar(&cfg.tilesDir, "tiles", defaultTilesDir, "directory containing tile images")
+	flag.IntVar(&cfg.tileSize, "tile-size", 20, "mosaic tile size in pixels")
+	flag.StringVar(&cfg.outputPath, "output", "", "output image path; defaults to <input>_mosaic.jpg")
+	flag.IntVar(&cfg.quality, "quality", 92, "JPEG quality from 1 to 100")
+	flag.Parse()
+
+	if flag.NArg() > 0 {
+		cfg.inputPath = flag.Arg(0)
+	}
+	return cfg
+}
+
+func runCLI(cfg cliConfig) error {
+	if cfg.tileSize < 1 {
+		return fmt.Errorf("tile-size must be greater than 0")
+	}
+	if cfg.quality < 1 {
+		cfg.quality = 1
+	}
+	if cfg.quality > 100 {
+		cfg.quality = 100
+	}
+	if cfg.outputPath == "" {
+		cfg.outputPath = defaultOutputPath(cfg.inputPath)
+	}
+
+	in, err := os.Open(cfg.inputPath)
+	if err != nil {
+		return fmt.Errorf("open input image: %w", err)
+	}
+	defer in.Close()
+
+	target, _, err := image.Decode(in)
+	if err != nil {
+		return fmt.Errorf("decode input image: %w", err)
+	}
+
+	g := mosaic.NewGenerator()
+	if err := g.LoadTiles(cfg.tilesDir); err != nil {
+		return fmt.Errorf("load tiles: %w", err)
+	}
+	if g.TileCount() == 0 {
+		return mosaic.ErrNoTiles
+	}
+
+	out, err := g.Generate(target, cfg.tileSize)
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(filepath.Dir(cfg.outputPath), 0755); err != nil {
+		return fmt.Errorf("create output directory: %w", err)
+	}
+	if err := writeImage(cfg.outputPath, out, cfg.quality); err != nil {
+		return err
+	}
+
+	abs, err := filepath.Abs(cfg.outputPath)
+	if err != nil {
+		abs = cfg.outputPath
+	}
+	fmt.Println(abs)
+	return nil
+}
+
+func defaultOutputPath(inputPath string) string {
+	ext := filepath.Ext(inputPath)
+	if ext == "" {
+		ext = ".jpg"
+	}
+	base := strings.TrimSuffix(filepath.Base(inputPath), filepath.Ext(inputPath))
+	return filepath.Join(filepath.Dir(inputPath), base+"_mosaic"+ext)
+}
+
+func writeImage(path string, img image.Image, jpegQuality int) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("create output image: %w", err)
+	}
+	defer f.Close()
+
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".png":
+		if err := png.Encode(f, img); err != nil {
+			return fmt.Errorf("encode png: %w", err)
+		}
+	case ".jpg", ".jpeg", "":
+		if err := jpeg.Encode(f, img, &jpeg.Options{Quality: jpegQuality}); err != nil {
+			return fmt.Errorf("encode jpeg: %w", err)
+		}
+	default:
+		return fmt.Errorf("unsupported output extension %q; use .jpg, .jpeg, or .png", filepath.Ext(path))
+	}
+
+	return nil
 }

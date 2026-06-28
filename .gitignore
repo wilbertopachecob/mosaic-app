@@ -22,4 +22,7 @@ tiles
 go.work
 
 # executable
-mosaic
+/mosaic
+
+# debug logs
+debug-f1a3d5.log
