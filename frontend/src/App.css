@@ -583,6 +583,7 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  margin-top: 16px;
   border: 1px solid var(--alert-border);
   border-radius: var(--radius);
   background: var(--alert-bg);

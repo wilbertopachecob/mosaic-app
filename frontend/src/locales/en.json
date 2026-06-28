@@ -22,7 +22,8 @@
     "file": "File",
     "size": "Size",
     "selectBeforeGenerate": "Select an image before generating a mosaic.",
-    "unexpectedError": "An unexpected error occurred"
+    "unexpectedError": "An unexpected error occurred",
+    "serverUnreachable": "Could not reach the server. Make sure the backend is running and try again."
   },
   "output": {
     "step": "Step 2",

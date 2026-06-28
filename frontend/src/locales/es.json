@@ -22,7 +22,8 @@
     "file": "Archivo",
     "size": "Tamaño",
     "selectBeforeGenerate": "Selecciona una imagen antes de generar un mosaico.",
-    "unexpectedError": "Ocurrió un error inesperado"
+    "unexpectedError": "Ocurrió un error inesperado",
+    "serverUnreachable": "No se pudo conectar con el servidor. Asegúrate de que el backend esté en ejecución e inténtalo de nuevo."
   },
   "output": {
     "step": "Paso 2",

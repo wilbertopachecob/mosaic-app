@@ -52,18 +52,42 @@ function App() {
     setAppState("idle");
   }, []);
 
-  const handleResponse = useCallback(async (response: Response) => {
-    if (!response.ok) {
-      const errorData: APIError = await response.json();
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+  const parseJson = useCallback(async <T,>(response: Response): Promise<T | null> => {
+    const text = await response.text();
+    if (!text) {
+      return null;
     }
-
-    const data: APIResponse = await response.json();
-    setMosaicImg(data.mosaicImg);
-    setDuration(data.duration);
-    setAppState("success");
-    setError(null);
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      return null;
+    }
   }, []);
+
+  const handleResponse = useCallback(
+    async (response: Response) => {
+      if (!response.ok) {
+        const errorData = await parseJson<APIError>(response);
+        if (errorData?.message) {
+          throw new Error(errorData.message);
+        }
+        if ([500, 502, 503, 504].includes(response.status)) {
+          throw new Error(t("input.serverUnreachable"));
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await parseJson<APIResponse>(response);
+      if (!data) {
+        throw new Error(t("input.unexpectedError"));
+      }
+      setMosaicImg(data.mosaicImg);
+      setDuration(data.duration);
+      setAppState("success");
+      setError(null);
+    },
+    [parseJson, t]
+  );
 
   const handleError = useCallback(
     (error: Error) => {
