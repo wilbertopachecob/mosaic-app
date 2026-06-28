@@ -6,7 +6,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
-import { AllProviders } from "./testUtils";
+import { AllProviders } from "./AppProviders";
 import "./i18n";
 
 const root = ReactDOM.createRoot(

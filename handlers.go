@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -83,8 +84,18 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		cfg = config.Load()
 	}
 
-	maxMemory := cfg.MaxFileSize + (1 << 20) // file size plus ~1MB for form fields
-	if err := r.ParseMultipartForm(maxMemory); err != nil {
+	// Cap the total request body so oversized uploads are rejected as they are
+	// read, instead of being fully buffered to memory/disk before the size
+	// check below. The allowance covers the image plus multipart/form overhead.
+	maxBody := cfg.MaxFileSize + (1 << 20)
+	r.Body = http.MaxBytesReader(w, r.Body, maxBody)
+
+	if err := r.ParseMultipartForm(maxBody); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			writeJSONError(w, http.StatusBadRequest, "file_too_large", fmt.Sprintf("File exceeds maximum size of %d bytes", cfg.MaxFileSize))
+			return
+		}
 		writeJSONError(w, http.StatusBadRequest, "invalid_request", "Failed to parse upload")
 		return
 	}

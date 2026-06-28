@@ -202,6 +202,42 @@ func TestUploadHandlerRejectsOversizedImage(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 }
 
+func TestUploadHandlerRejectsOversizedBody(t *testing.T) {
+	appConfig = &config.Config{
+		MaxFileSize:    1024, // 1KB cap
+		MaxImageWidth:  4096,
+		MaxImageHeight: 4096,
+		MinTileSize:    5,
+		MaxTileSize:    100,
+	}
+	t.Cleanup(func() {
+		appConfig = testConfig()
+	})
+
+	// Build a body beyond the MaxFileSize + 1MB allowance so MaxBytesReader
+	// trips during parsing, before the whole body is buffered to disk.
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("imgUpload", "big.jpg")
+	require.NoError(t, err)
+	part.Write(bytes.Repeat([]byte("A"), 2<<20)) // 2MB of payload
+	writer.Close()
+	require.Greater(t, body.Len(), int(appConfig.MaxFileSize)+(1<<20))
+
+	req, err := http.NewRequest("POST", "/api/file/upload", body)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	rr := httptest.NewRecorder()
+	uploadHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var response map[string]interface{}
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &response))
+	assert.Equal(t, "file_too_large", response["error"])
+}
+
 func TestServerErrorMessageProduction(t *testing.T) {
 	appConfig = &config.Config{Production: true}
 	t.Cleanup(func() {
