@@ -1,7 +1,6 @@
 package mosaic
 
 import (
-	"encoding/json"
 	"image"
 	"image/color"
 	"image/draw"
@@ -12,7 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 )
 
 // Generator creates photo mosaics from a target image and a set of tile images.
@@ -115,28 +113,6 @@ func (g *Generator) TileCount() int {
 	return len(g.tiles)
 }
 
-// #region agent log
-// DebugLog writes an NDJSON line to the session log file for debugging.
-func DebugLog(hypothesisId, message string, data map[string]interface{}) {
-	payload := map[string]interface{}{
-		"hypothesisId": hypothesisId,
-		"location":     "generator.go:Generate",
-		"message":      message,
-		"data":         data,
-		"timestamp":    time.Now().UnixMilli(),
-	}
-	b, _ := json.Marshal(payload)
-	logPath := "/Users/wilbertopachecobatista/Projects/mosaic-app/.cursor/debug-f1a3d5.log"
-	os.MkdirAll(filepath.Dir(logPath), 0755)
-	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err == nil {
-		f.Write(append(b, '\n'))
-		f.Close()
-	}
-}
-
-// #endregion
-
 // Generate creates a photo mosaic from target by dividing it into tile-sized
 // regions, finding the best-matching tile for each region, and drawing it.
 // tileSize is the side length of each square tile in pixels.
@@ -166,23 +142,6 @@ func (g *Generator) GenerateWithOptions(target image.Image, tileSize int, opts O
 	// Pre-fill with white so undrawn pixels encode as white in JPEG (default NRGBA is transparent black → black in JPEG)
 	draw.Draw(out, bounds, &image.Uniform{C: color.White}, image.Point{}, draw.Src)
 
-	// #region agent log
-	DebugLog("H5", "Generate start", map[string]interface{}{
-		"tileCount": len(tiles),
-		"tileSize":  tileSize,
-		"bounds":    map[string]int{"minX": bounds.Min.X, "minY": bounds.Min.Y, "maxX": bounds.Max.X, "maxY": bounds.Max.Y},
-		"width":     bounds.Dx(),
-		"height":    bounds.Dy(),
-		"blend":     opts.SourceBlend,
-	})
-	// #endregion
-
-	regionCount := 0
-	var firstRect, lastRect image.Rectangle
-	var firstResizedW, firstResizedH int
-	var lastTilePath string
-	var lastRegionColor RGB
-
 	// Process each tile-sized region
 	for y := bounds.Min.Y; y < bounds.Max.Y; y += tileSize {
 		for x := bounds.Min.X; x < bounds.Max.X; x += tileSize {
@@ -195,55 +154,20 @@ func (g *Generator) GenerateWithOptions(target image.Image, tileSize int, opts O
 				endY = bounds.Max.Y
 			}
 
-			// Use region average for robust matching (top-left pixel can misrepresent varied regions)
 			regionColor := RegionAverageColor(target, x, y, endX, endY)
-
-			// Find best matching tile (nearest color in RGB space)
 			best := findNearest(regionColor, tiles)
 
-			// Resize tile to fit region and draw
 			w, h := endX-x, endY-y
 			resized := resizeTile(best.img, w, h)
 			adjusted := colorCorrectTile(resized, best.color, regionColor)
 			rect := image.Rect(x, y, endX, endY)
-			// Author uses draw.Src to fully replace pixels; draw.Over can leave transparent gaps
 			draw.Draw(out, rect, adjusted, image.Point{}, draw.Src)
-
-			// #region agent log
-			regionCount++
-			if regionCount == 1 {
-				firstRect = rect
-				firstResizedW, firstResizedH = w, h
-			}
-			lastRect = rect
-			lastTilePath = best.path
-			lastRegionColor = regionColor
-			// #endregion
 		}
 	}
 
 	if opts.SourceBlend > 0 {
 		blendWithTarget(out, target, opts.SourceBlend)
 	}
-
-	// #region agent log
-	samplePixel := func(ox, oy int) map[string]interface{} {
-		c := out.NRGBAAt(ox+bounds.Min.X, oy+bounds.Min.Y)
-		return map[string]interface{}{"x": ox, "y": oy, "R": c.R, "G": c.G, "B": c.B, "A": c.A}
-	}
-	DebugLog("H2", "Generate end", map[string]interface{}{
-		"regionCount":     regionCount,
-		"firstRect":       map[string]int{"minX": firstRect.Min.X, "minY": firstRect.Min.Y, "maxX": firstRect.Max.X, "maxY": firstRect.Max.Y},
-		"lastRect":        map[string]int{"minX": lastRect.Min.X, "minY": lastRect.Min.Y, "maxX": lastRect.Max.X, "maxY": lastRect.Max.Y},
-		"firstResizedW":   firstResizedW,
-		"firstResizedH":   firstResizedH,
-		"lastTilePath":    filepath.Base(lastTilePath),
-		"lastRegionColor": []float64{lastRegionColor[0], lastRegionColor[1], lastRegionColor[2]},
-		"pixelTL":         samplePixel(0, 0),
-		"pixelCenter":     samplePixel(bounds.Dx()/2, bounds.Dy()/2),
-		"pixelBR":         samplePixel(bounds.Dx()-1, bounds.Dy()-1),
-	})
-	// #endregion
 
 	return out, nil
 }
@@ -279,12 +203,9 @@ func loadImage(path string) (image.Image, error) {
 
 // resizeTile scales img to width x height using bilinear sampling.
 func resizeTile(img image.Image, width, height int) image.Image {
-	// #region agent log
 	if width <= 0 || height <= 0 {
-		DebugLog("H3", "resizeTile invalid dims", map[string]interface{}{"width": width, "height": height})
 		return img
 	}
-	// #endregion
 
 	src := img.Bounds()
 	out := image.NewNRGBA(image.Rect(0, 0, width, height))

@@ -14,10 +14,8 @@ import (
 
 	"wilbertopachecob/mosaic/config"
 	"wilbertopachecob/mosaic/lib/mosaic"
+	"wilbertopachecob/mosaic/middleware"
 )
-
-// mosaicGenerator is set at startup and used by uploadHandler.
-var mosaicGenerator *mosaic.Generator
 
 func main() {
 	cfg := config.Load()
@@ -30,25 +28,43 @@ func main() {
 	}
 
 	fmt.Println("Initializing mosaic generator...")
-	mosaicGenerator = mosaic.NewGenerator()
+	generator := mosaic.NewGenerator()
 
-	// Load tiles from configured directory
-	if err := mosaicGenerator.LoadTiles(cfg.TilesDir); err != nil {
+	if err := generator.LoadTiles(cfg.TilesDir); err != nil {
 		log.Printf("Warning: Failed to load tiles from %q: %v", cfg.TilesDir, err)
 	} else {
-		fmt.Printf("Loaded %d tiles successfully\n", mosaicGenerator.TileCount())
+		fmt.Printf("Loaded %d tiles successfully\n", generator.TileCount())
 	}
+
+	configureServer(cfg, generator)
+
+	rateLimiter := middleware.NewIPRateLimiter(cfg.RateLimitRequests, cfg.RateLimitWindow)
+	generationSem := middleware.NewSemaphore(cfg.MaxConcurrentGenerations)
+
+	var upload http.Handler = http.HandlerFunc(uploadHandler)
+	upload = rateLimiter.Middleware(upload)
+	upload = generationSem.Middleware(upload)
+	upload = middleware.Timeout(cfg.RequestTimeout, upload)
+
+	http.Handle("/api/file/upload", upload)
+	http.HandleFunc("/api/health", healthHandler)
+
+	fs := http.FileServer(http.Dir("dist/build"))
+	http.Handle("/", fs)
 
 	addr := ":" + cfg.ServerPort
 	fmt.Printf("Mosaic server starting on http://localhost%s\n", addr)
-
-	// Set up routes
-	http.HandleFunc("/api/file/upload", uploadHandler)
-	http.HandleFunc("/api/health", healthHandler)
-
-	// Serve static files from the frontend build
-	fs := http.FileServer(http.Dir("dist/build"))
-	http.Handle("/", fs)
+	if cfg.Production {
+		fmt.Println("Production mode enabled (generic server errors)")
+	}
+	fmt.Printf("Security: max upload %d bytes, image cap %dx%d, tile size %d-%d, rate limit %d/%s, concurrency %d, timeout %s\n",
+		cfg.MaxFileSize,
+		cfg.MaxImageWidth, cfg.MaxImageHeight,
+		cfg.MinTileSize, cfg.MaxTileSize,
+		cfg.RateLimitRequests, cfg.RateLimitWindow,
+		cfg.MaxConcurrentGenerations,
+		cfg.RequestTimeout,
+	)
 
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatalf("Server failed to start: %v", err)

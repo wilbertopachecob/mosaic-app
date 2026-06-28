@@ -14,14 +14,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"wilbertopachecob/mosaic/config"
 	"wilbertopachecob/mosaic/lib/mosaic"
 )
 
 func init() {
-	// Initialize mosaic generator for handler tests (main() is not run in tests)
 	if mosaicGenerator == nil {
 		mosaicGenerator = mosaic.NewGenerator()
 		_ = mosaicGenerator.LoadTiles("tiles")
+	}
+	if appConfig == nil {
+		appConfig = testConfig()
 	}
 }
 
@@ -92,7 +95,6 @@ func TestUploadHandlerWithInvalidRequest(t *testing.T) {
 
 // TestUploadHandlerWithInvalidTileSize tests that invalid tile size falls back to default
 func TestUploadHandlerWithInvalidTileSize(t *testing.T) {
-	// Create a test image
 	img := createTestImage(100, 100)
 	imgBytes := imageToBytes(t, img)
 
@@ -114,13 +116,104 @@ func TestUploadHandlerWithInvalidTileSize(t *testing.T) {
 	handler := http.HandlerFunc(uploadHandler)
 	handler.ServeHTTP(rr, req)
 
-	// With invalid tile size we use default 20; request may succeed or fail (no tiles)
 	assert.True(t, rr.Code == http.StatusOK || rr.Code == http.StatusInternalServerError)
+}
+
+func TestUploadHandlerRejectsOutOfRangeTileSize(t *testing.T) {
+	imgBytes := imageToBytes(t, createTestImage(100, 100))
+
+	for _, tileSize := range []string{"1", "200"} {
+		t.Run("tileSize="+tileSize, func(t *testing.T) {
+			body := &bytes.Buffer{}
+			writer := multipart.NewWriter(body)
+			part, err := writer.CreateFormFile("imgUpload", "test.jpg")
+			require.NoError(t, err)
+			part.Write(imgBytes)
+			writer.WriteField("tileSize", tileSize)
+			writer.Close()
+
+			req, err := http.NewRequest("POST", "/api/file/upload", body)
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", writer.FormDataContentType())
+
+			rr := httptest.NewRecorder()
+			uploadHandler(rr, req)
+
+			assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+			var response errorResponse
+			require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &response))
+			assert.Equal(t, "invalid_tile_size", response.Error)
+		})
+	}
+}
+
+func TestUploadHandlerRejectsInvalidBlend(t *testing.T) {
+	imgBytes := imageToBytes(t, createTestImage(100, 100))
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("imgUpload", "test.jpg")
+	require.NoError(t, err)
+	part.Write(imgBytes)
+	writer.WriteField("tileSize", "20")
+	writer.WriteField("blend", "2")
+	writer.Close()
+
+	req, err := http.NewRequest("POST", "/api/file/upload", body)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	rr := httptest.NewRecorder()
+	uploadHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+func TestUploadHandlerRejectsOversizedImage(t *testing.T) {
+	appConfig = &config.Config{
+		MaxFileSize:    10 * 1024 * 1024,
+		MaxImageWidth:  200,
+		MaxImageHeight: 200,
+		MinTileSize:    5,
+		MaxTileSize:    100,
+	}
+	t.Cleanup(func() {
+		appConfig = testConfig()
+	})
+
+	imgBytes := imageToBytes(t, createTestImage(300, 300))
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("imgUpload", "test.jpg")
+	require.NoError(t, err)
+	part.Write(imgBytes)
+	writer.WriteField("tileSize", "20")
+	writer.Close()
+
+	req, err := http.NewRequest("POST", "/api/file/upload", body)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	rr := httptest.NewRecorder()
+	uploadHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+func TestServerErrorMessageProduction(t *testing.T) {
+	appConfig = &config.Config{Production: true}
+	t.Cleanup(func() {
+		appConfig = testConfig()
+	})
+
+	msg := serverErrorMessage(assert.AnError)
+	assert.Equal(t, "An internal error occurred", msg)
 }
 
 // TestUploadHandlerWithValidRequest tests upload handler with a valid request
 func TestUploadHandlerWithValidRequest(t *testing.T) {
-	// Skip if no tiles loaded (mosaicGenerator is set in main, may be nil in test)
 	if mosaicGenerator == nil || mosaicGenerator.TileCount() == 0 {
 		t.Skip("No tiles loaded for testing")
 	}
@@ -158,9 +251,6 @@ func TestUploadHandlerWithValidRequest(t *testing.T) {
 	}
 }
 
-// Helper functions
-
-// createTestImage creates a simple test image
 func createTestImage(width, height int) image.Image {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 	for y := 0; y < height; y++ {
@@ -171,7 +261,6 @@ func createTestImage(width, height int) image.Image {
 	return img
 }
 
-// imageToBytes converts an image to JPEG bytes
 func imageToBytes(t *testing.T, img image.Image) []byte {
 	var buf bytes.Buffer
 	err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 90})

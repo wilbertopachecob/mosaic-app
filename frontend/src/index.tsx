@@ -1,13 +1,13 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+// Bootstrap CSS (imported before App so app/theme styles override Bootstrap defaults)
+import "bootstrap/dist/css/bootstrap.min.css";
+// Bootstrap Bundle JS
+import "bootstrap/dist/js/bootstrap.bundle.min";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { AllProviders } from "./testUtils";
 import "./i18n";
-// Bootstrap CSS
-import "bootstrap/dist/css/bootstrap.min.css";
-// Bootstrap Bundle JS
-import "bootstrap/dist/js/bootstrap.bundle.min";
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
