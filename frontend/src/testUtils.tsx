@@ -1,6 +1,6 @@
 import React from "react";
 import { render, RenderResult } from "@testing-library/react";
-import { AllProviders } from "./AppProviders";
+import { AllProviders } from "@/AppProviders";
 
 export { AllProviders };
 
@@ -10,3 +10,5 @@ export { AllProviders };
 export function renderWithProviders(ui: React.ReactElement): RenderResult {
   return render(<AllProviders>{ui}</AllProviders>);
 }
+
+export { expectNoA11yViolations, runAxeAudit } from "@/testUtils/a11y";

@@ -1,8 +1,8 @@
 import React from 'react';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import UploadForm from '../UploadForm';
-import { renderWithProviders } from '../../testUtils';
+import UploadForm from '@/components/UploadForm';
+import { renderWithProviders } from '@/testUtils';
 
 // Mock functions
 const mockHandleSubmit = jest.fn();

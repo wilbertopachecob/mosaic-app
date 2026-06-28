@@ -1,9 +1,9 @@
 import { screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import HeaderControls from "../HeaderControls";
-import { renderWithProviders } from "../../testUtils";
-import i18n from "../../i18n";
-import { AppLanguage } from "../../constants/language";
+import HeaderControls from "@/components/HeaderControls";
+import { renderWithProviders } from "@/testUtils";
+import i18n from "@/i18n";
+import { AppLanguage } from "@/constants/language";
 
 describe("HeaderControls", () => {
   beforeEach(async () => {

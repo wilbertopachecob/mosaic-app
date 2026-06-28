@@ -1,5 +1,5 @@
-import { getInitialLanguage } from "./i18n";
-import { AppLanguage } from "./constants/language";
+import { getInitialLanguage } from "@/i18n";
+import { AppLanguage } from "@/constants/language";
 
 describe("getInitialLanguage", () => {
   beforeEach(() => {

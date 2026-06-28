@@ -1,4 +1,4 @@
-import { formatDuration, formatFileSize, truncateFileName } from "../format";
+import { formatDuration, formatFileSize, truncateFileName } from "@/utils/format";
 
 describe("formatDuration", () => {
   it("shows milliseconds for sub-second durations", () => {

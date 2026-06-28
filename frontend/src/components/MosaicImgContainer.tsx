@@ -10,7 +10,7 @@ import {
   RefreshCw,
   SlidersHorizontal,
 } from "lucide-react";
-import { formatDuration, truncateFileName } from "../utils/format";
+import { formatDuration, truncateFileName } from "@/utils/format";
 
 /** Props for the mosaic result panel, including metadata and actions. */
 type MosaicImgContainerProps = {

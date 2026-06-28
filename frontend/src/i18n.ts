@@ -1,8 +1,8 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import { AppLanguage } from "./constants/language";
-import en from "./locales/en.json";
-import es from "./locales/es.json";
+import { AppLanguage } from "@/constants/language";
+import en from "@/locales/en.json";
+import es from "@/locales/es.json";
 
 const STORAGE_KEY = "mosaic-language";
 

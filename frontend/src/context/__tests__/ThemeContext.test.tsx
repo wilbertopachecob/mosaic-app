@@ -4,7 +4,7 @@ import {
   useTheme,
   getInitialTheme,
   applyTheme,
-} from "../ThemeContext";
+} from "@/context/ThemeContext";
 
 describe("getInitialTheme", () => {
   beforeEach(() => {

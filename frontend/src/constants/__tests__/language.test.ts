@@ -1,4 +1,4 @@
-import { AppLanguage, resolveAppLanguage } from "../language";
+import { AppLanguage, resolveAppLanguage } from "@/constants/language";
 
 describe("resolveAppLanguage", () => {
   it("maps Spanish locale codes to Es", () => {

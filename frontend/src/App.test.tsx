@@ -1,7 +1,7 @@
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import App from './App';
-import { renderWithProviders } from './testUtils';
+import App from '@/App';
+import { renderWithProviders } from '@/testUtils';
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;

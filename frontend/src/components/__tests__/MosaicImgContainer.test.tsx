@@ -1,7 +1,7 @@
 import { screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import MosaicImgContainer from "../MosaicImgContainer";
-import { renderWithProviders } from "../../testUtils";
+import MosaicImgContainer from "@/components/MosaicImgContainer";
+import { renderWithProviders } from "@/testUtils";
 
 const defaultProps = {
   mosaicImg: null as string | null,

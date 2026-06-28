@@ -1,7 +1,7 @@
 import { screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import ErrorMessage from "../ErrorMessage";
-import { renderWithProviders } from "../../testUtils";
+import ErrorMessage from "@/components/ErrorMessage";
+import { renderWithProviders } from "@/testUtils";
 
 describe("ErrorMessage", () => {
   it("renders the message with alert role", () => {

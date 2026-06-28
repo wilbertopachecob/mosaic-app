@@ -1,8 +1,8 @@
 import React from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { AppLanguage, resolveAppLanguage } from "../constants/language";
-import { useTheme } from "../context/ThemeContext";
+import { AppLanguage, resolveAppLanguage } from "@/constants/language";
+import { useTheme } from "@/context/ThemeContext";
 
 /** Segmented control for switching between English and Spanish. */
 const LanguageToggle: React.FC = () => {

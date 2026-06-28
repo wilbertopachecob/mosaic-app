@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Images, Wand2 } from "lucide-react";
-import MosaicImgContainer from "./components/MosaicImgContainer";
-import UploadForm from "./components/UploadForm";
-import ErrorMessage from "./components/ErrorMessage";
-import HeaderControls from "./components/HeaderControls";
-import Logo from "./components/Logo";
-import { parseJson } from "./utils/api";
-import { formatFileSize } from "./utils/format";
-import "./App.css";
+import MosaicImgContainer from "@/components/MosaicImgContainer";
+import UploadForm from "@/components/UploadForm";
+import ErrorMessage from "@/components/ErrorMessage";
+import HeaderControls from "@/components/HeaderControls";
+import Logo from "@/components/Logo";
+import { parseJson } from "@/utils/api";
+import { formatFileSize } from "@/utils/format";
+import "@/App.css";
 
 /** Successful mosaic generation response from the upload API. */
 type APIResponse = {

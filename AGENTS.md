@@ -39,3 +39,19 @@ const unitIndex = Math.floor(Math.log(bytes) / Math.log(bytesPerUnit));
 ```
 
 Short names are fine in very small scopes when the meaning is obvious from context (for example `index` in `items.map((item, index) => ...)`), but prefer descriptive names for anything that carries business or formatting logic.
+
+### Prefer absolute imports with the `@/` alias
+
+In `frontend/src/`, avoid relative imports (`../`, `./`). Use the `@/` webpack/TypeScript alias, which resolves to `src/`.
+
+```typescript
+// ❌ BAD
+import logoLockupLight from "../assets/logo-lockup-light.svg";
+import { useTheme } from "../context/ThemeContext";
+
+// ✅ GOOD
+import logoLockupLight from "@/assets/logo-lockup-light.svg";
+import { useTheme } from "@/context/ThemeContext";
+```
+
+The alias is configured in `frontend/craco.config.js` and `frontend/tsconfig.json`.

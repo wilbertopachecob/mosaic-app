@@ -1,4 +1,4 @@
-import { parseJson } from "../api";
+import { parseJson } from "@/utils/api";
 
 function mockResponse(body: string, init?: ResponseInit): Response {
   return new Response(body, init);
