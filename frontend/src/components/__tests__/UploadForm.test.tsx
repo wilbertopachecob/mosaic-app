@@ -41,9 +41,9 @@ describe('UploadForm', () => {
     expect(select).toHaveValue('20');
     
     // Check for some key options
-    expect(screen.getByText('5px - Very Fine Detail')).toBeInTheDocument();
+    expect(screen.getByText('5px - Very fine')).toBeInTheDocument();
     expect(screen.getByText('20px - Standard')).toBeInTheDocument();
-    expect(screen.getByText('100px - Very Large Tiles')).toBeInTheDocument();
+    expect(screen.getByText('100px - Poster blocks')).toBeInTheDocument();
   });
 
   it('calls handleSubmit when form is submitted', () => {
@@ -76,7 +76,7 @@ describe('UploadForm', () => {
   it('explains source blend in help text', () => {
     render(<UploadForm {...defaultProps} />);
 
-    expect(screen.getByText(/pure tile mosaic/i)).toBeInTheDocument();
+    expect(screen.getByText(/purer tiles/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/blend help/i)).toHaveAttribute('title', expect.stringContaining('original image'));
   });
 

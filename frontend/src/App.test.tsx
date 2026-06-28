@@ -22,8 +22,8 @@ test('renders tile size selector', () => {
 
 test('renders source blend control', () => {
   render(<App />);
-  const blendLabel = screen.getByText(/source blend/i);
-  expect(blendLabel).toBeInTheDocument();
+  const blendControl = screen.getByRole('slider', { name: /source blend/i });
+  expect(blendControl).toBeInTheDocument();
 });
 
 test('renders generate button', () => {
