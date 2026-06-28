@@ -16,6 +16,7 @@ import {
   Wand2,
 } from "lucide-react";
 
+/** Props for the image upload and mosaic settings form. */
 type UploadFormProps = {
   selectedTileSize: string;
   selectedBlend: string;
@@ -25,10 +26,13 @@ type UploadFormProps = {
   handleFileChange: (file: File) => void;
   handleTileSizeChange: (tile: string) => void;
   handleBlendChange: (blend: string) => void;
-}
+};
 
 const tileValues = ["5", "10", "15", "20", "25", "30", "50", "100"];
 
+/**
+ * Upload zone and controls for tile size, source blend, and mosaic generation.
+ */
 const UploadForm: React.FC<UploadFormProps> = ({
   selectedTileSize,
   selectedBlend,
@@ -51,6 +55,7 @@ const UploadForm: React.FC<UploadFormProps> = ({
     [t]
   );
 
+  /** Validates file type and size before accepting an upload. */
   const validateAndSetFile = useCallback(
     (file: File) => {
       if (!file.type.startsWith("image/")) {

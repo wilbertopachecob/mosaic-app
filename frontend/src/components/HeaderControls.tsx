@@ -1,13 +1,15 @@
 import React from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { AppLanguage, resolveAppLanguage } from "../constants/language";
 import { useTheme } from "../context/ThemeContext";
 
+/** Segmented control for switching between English and Spanish. */
 const LanguageToggle: React.FC = () => {
   const { i18n, t } = useTranslation();
-  const currentLang = (i18n.language ?? "en").startsWith("es") ? "es" : "en";
+  const currentLang = resolveAppLanguage(i18n.language);
 
-  const setLanguage = (lang: "en" | "es") => {
+  const setLanguage = (lang: AppLanguage) => {
     if (lang !== currentLang) {
       i18n.changeLanguage(lang);
     }
@@ -26,17 +28,17 @@ const LanguageToggle: React.FC = () => {
       />
       <button
         type="button"
-        className={`lang-toggle-option ${currentLang === "es" ? "is-active" : ""}`}
-        aria-pressed={currentLang === "es"}
-        onClick={() => setLanguage("es")}
+        className={`lang-toggle-option ${currentLang === AppLanguage.Es ? "is-active" : ""}`}
+        aria-pressed={currentLang === AppLanguage.Es}
+        onClick={() => setLanguage(AppLanguage.Es)}
       >
         ES
       </button>
       <button
         type="button"
-        className={`lang-toggle-option ${currentLang === "en" ? "is-active" : ""}`}
-        aria-pressed={currentLang === "en"}
-        onClick={() => setLanguage("en")}
+        className={`lang-toggle-option ${currentLang === AppLanguage.En ? "is-active" : ""}`}
+        aria-pressed={currentLang === AppLanguage.En}
+        onClick={() => setLanguage(AppLanguage.En)}
       >
         EN
       </button>
@@ -44,6 +46,7 @@ const LanguageToggle: React.FC = () => {
   );
 };
 
+/** Button that toggles between light and dark themes. */
 const ThemeToggle: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { t } = useTranslation();
@@ -66,6 +69,7 @@ const ThemeToggle: React.FC = () => {
   );
 };
 
+/** Header toolbar with language and theme controls. */
 const HeaderControls: React.FC = () => {
   return (
     <div className="header-controls">

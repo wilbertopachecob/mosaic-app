@@ -18,7 +18,10 @@ const STORAGE_KEY = "mosaic-theme";
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function getInitialTheme(): Theme {
+/**
+ * Resolves the initial theme from localStorage or the system color-scheme preference.
+ */
+export function getInitialTheme(): Theme {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored === "light" || stored === "dark") {
     return stored;
@@ -33,10 +36,15 @@ function getInitialTheme(): Theme {
   return "light";
 }
 
-function applyTheme(theme: Theme) {
+/** Applies the active theme to the document root via a `data-theme` attribute. */
+export function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
 }
 
+/**
+ * Provides theme state and a toggle action to descendant components.
+ * Persists the selected theme in localStorage.
+ */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     const initial = getInitialTheme();
@@ -66,6 +74,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Returns the current theme and `toggleTheme` from the nearest `ThemeProvider`.
+ * @throws When called outside of a `ThemeProvider`.
+ */
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {

@@ -10,7 +10,9 @@ import {
   RefreshCw,
   SlidersHorizontal,
 } from "lucide-react";
+import { formatDuration, truncateFileName } from "../utils/format";
 
+/** Props for the mosaic result panel, including metadata and actions. */
 type MosaicImgContainerProps = {
   mosaicImg: string | null;
   duration: number;
@@ -20,8 +22,11 @@ type MosaicImgContainerProps = {
   isLoading: boolean;
   hasSourceImage: boolean;
   onReset?: () => void;
-}
+};
 
+/**
+ * Displays the generated mosaic, generation metadata, and download/reset actions.
+ */
 const MosaicImgContainer: React.FC<MosaicImgContainerProps> = ({
   mosaicImg,
   duration,
@@ -34,6 +39,7 @@ const MosaicImgContainer: React.FC<MosaicImgContainerProps> = ({
 }) => {
   const { t } = useTranslation();
 
+  /** Triggers a browser download of the base64-encoded mosaic JPEG. */
   const handleDownload = useCallback(() => {
     if (!mosaicImg) return;
 
@@ -45,15 +51,8 @@ const MosaicImgContainer: React.FC<MosaicImgContainerProps> = ({
     document.body.removeChild(link);
   }, [mosaicImg, fileName]);
 
-  const formatDuration = useCallback((seconds: number) => {
-    if (seconds < 1) {
-      return `${Math.round(seconds * 1000)}ms`;
-    }
-    return `${seconds.toFixed(2)}s`;
-  }, []);
-
   const displayFileName = fileName
-    ? fileName.substring(0, 28) + (fileName.length > 28 ? "..." : "")
+    ? truncateFileName(fileName)
     : t("result.noSource");
   const blendPercent = `${Math.round(Number(blend) * 100)}%`;
 

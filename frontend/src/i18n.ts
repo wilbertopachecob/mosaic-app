@@ -1,18 +1,23 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
+import { AppLanguage } from "./constants/language";
 import en from "./locales/en.json";
 import es from "./locales/es.json";
 
 const STORAGE_KEY = "mosaic-language";
 
-function getInitialLanguage(): string {
+/**
+ * Resolves the initial UI language from localStorage or the browser locale.
+ * Falls back to English when no supported preference is found.
+ */
+export function getInitialLanguage(): string {
   const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === "en" || stored === "es") {
+  if (stored === AppLanguage.En || stored === AppLanguage.Es) {
     return stored;
   }
 
   const browserLang = navigator.language.toLowerCase();
-  return browserLang.startsWith("es") ? "es" : "en";
+  return browserLang.startsWith(AppLanguage.Es) ? AppLanguage.Es : AppLanguage.En;
 }
 
 const initialLanguage = getInitialLanguage();
@@ -24,7 +29,7 @@ i18n.use(initReactI18next).init({
     es: { translation: es },
   },
   lng: initialLanguage,
-  fallbackLng: "en",
+  fallbackLng: AppLanguage.En,
   interpolation: {
     escapeValue: false,
   },

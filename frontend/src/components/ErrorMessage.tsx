@@ -2,11 +2,12 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { AlertCircle, AlertTriangle, Info, X } from "lucide-react";
 
+/** Props for a dismissible inline alert banner. */
 type ErrorMessageProps = {
   message: string;
   onDismiss?: () => void;
   type?: "error" | "warning" | "info";
-}
+};
 
 const iconMap = {
   error: AlertCircle,
@@ -14,6 +15,9 @@ const iconMap = {
   info: Info,
 };
 
+/**
+ * Inline alert for errors, warnings, or informational messages.
+ */
 const ErrorMessage: React.FC<ErrorMessageProps> = ({
   message,
   onDismiss,

@@ -4,6 +4,7 @@ import { useTheme } from "../context/ThemeContext";
 import logoLockupDark from "../assets/logo-lockup-dark.svg";
 import logoLockupLight from "../assets/logo-lockup-light.svg";
 
+/** Application logo that swaps between light and dark lockup variants. */
 const Logo: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();

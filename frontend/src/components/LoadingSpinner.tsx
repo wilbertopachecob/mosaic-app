@@ -1,10 +1,15 @@
 import React from 'react';
 
+/** Size variants for the Bootstrap spinner. */
 type LoadingSpinnerProps = {
   size?: 'sm' | 'md' | 'lg';
   color?: string;
-}
+};
 
+/**
+ * Bootstrap-styled loading spinner.
+ * @deprecated Not currently used in the app; prefer inline `Loader2` spinners.
+ */
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   size = 'md', 
   color = 'primary' 
@@ -22,4 +27,4 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   );
 };
 
-export default LoadingSpinner; 
+export default LoadingSpinner;

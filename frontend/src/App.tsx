@@ -6,21 +6,29 @@ import UploadForm from "./components/UploadForm";
 import ErrorMessage from "./components/ErrorMessage";
 import HeaderControls from "./components/HeaderControls";
 import Logo from "./components/Logo";
+import { parseJson } from "./utils/api";
+import { formatFileSize } from "./utils/format";
 import "./App.css";
 
+/** Successful mosaic generation response from the upload API. */
 type APIResponse = {
   mosaicImg: string;
   duration: number;
 };
 
+/** Error payload returned by the upload API. */
 type APIError = {
   error: string;
   message: string;
   code: number;
 };
 
+/** Tracks the overall upload and generation lifecycle in the UI. */
 type AppState = "idle" | "loading" | "success" | "error";
 
+/**
+ * Root application view: image upload, mosaic settings, generation, and result display.
+ */
 function App() {
   const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
@@ -44,6 +52,7 @@ function App() {
     return () => URL.revokeObjectURL(objectUrl);
   }, [file]);
 
+  /** Replaces the selected source image and clears any prior result. */
   const handleFileChange = useCallback((nextFile: File) => {
     setFile(nextFile);
     setMosaicImg(null);
@@ -52,18 +61,7 @@ function App() {
     setAppState("idle");
   }, []);
 
-  const parseJson = useCallback(async <T,>(response: Response): Promise<T | null> => {
-    const text = await response.text();
-    if (!text) {
-      return null;
-    }
-    try {
-      return JSON.parse(text) as T;
-    } catch {
-      return null;
-    }
-  }, []);
-
+  /** Maps a successful or failed upload response into UI state. */
   const handleResponse = useCallback(
     async (response: Response) => {
       if (!response.ok) {
@@ -86,9 +84,10 @@ function App() {
       setAppState("success");
       setError(null);
     },
-    [parseJson, t]
+    [t]
   );
 
+  /** Surfaces API and network failures to the user. */
   const handleError = useCallback(
     (error: Error) => {
       console.error("API Error:", error);
@@ -98,6 +97,7 @@ function App() {
     [t]
   );
 
+  /** Posts the selected image and mosaic settings to the upload API. */
   const handleSubmit = useCallback(async () => {
     if (!file) {
       setError(t("input.selectBeforeGenerate"));
@@ -126,6 +126,7 @@ function App() {
     }
   }, [file, tileSize, blend, handleResponse, handleError, t]);
 
+  /** Clears the current session and returns the workspace to its initial state. */
   const handleReset = useCallback(() => {
     setFile(null);
     setMosaicImg(null);
@@ -134,19 +135,14 @@ function App() {
     setAppState("idle");
   }, []);
 
-  const formatFileSize = useCallback(
-    (bytes: number): string => {
-      if (bytes === 0) return `0 ${t("units.bytes")}`;
-      const k = 1024;
-      const sizes = [
+  const formatSize = useCallback(
+    (bytes: number): string =>
+      formatFileSize(bytes, [
         t("units.bytes"),
         t("units.kb"),
         t("units.mb"),
         t("units.gb"),
-      ];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-    },
+      ]),
     [t]
   );
 
@@ -196,7 +192,7 @@ function App() {
                 </div>
                 <div>
                   <dt>{t("input.size")}</dt>
-                  <dd>{formatFileSize(file.size)}</dd>
+                  <dd>{formatSize(file.size)}</dd>
                 </div>
               </dl>
             )}
