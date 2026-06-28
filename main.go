@@ -61,6 +61,7 @@ type cliConfig struct {
 	tilesDir   string
 	tileSize   int
 	quality    int
+	blend      float64
 }
 
 func parseCLIFlags(defaultTilesDir string) cliConfig {
@@ -69,6 +70,7 @@ func parseCLIFlags(defaultTilesDir string) cliConfig {
 	flag.IntVar(&cfg.tileSize, "tile-size", 20, "mosaic tile size in pixels")
 	flag.StringVar(&cfg.outputPath, "output", "", "output image path; defaults to <input>_mosaic.jpg")
 	flag.IntVar(&cfg.quality, "quality", 92, "JPEG quality from 1 to 100")
+	flag.Float64Var(&cfg.blend, "blend", mosaic.DefaultOptions().SourceBlend, "original image blend from 0.0 to 1.0")
 	flag.Parse()
 
 	if flag.NArg() > 0 {
@@ -110,7 +112,7 @@ func runCLI(cfg cliConfig) error {
 		return mosaic.ErrNoTiles
 	}
 
-	out, err := g.Generate(target, cfg.tileSize)
+	out, err := g.GenerateWithOptions(target, cfg.tileSize, mosaic.Options{SourceBlend: cfg.blend})
 	if err != nil {
 		return err
 	}

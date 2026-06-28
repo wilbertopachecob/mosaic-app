@@ -22,6 +22,20 @@ type Generator struct {
 	tiles []tileEntry
 }
 
+// Options controls the visual style of generated mosaics.
+type Options struct {
+	// SourceBlend controls how much of the original image is blended over the
+	// tile mosaic. Services such as EasyMoza use this kind of compositing to
+	// preserve faces, edges, and shadows while keeping tiles visible up close.
+	// Use 0 for pure tile output and 1 for the original image.
+	SourceBlend float64
+}
+
+// DefaultOptions returns the production default mosaic style.
+func DefaultOptions() Options {
+	return Options{SourceBlend: 0.42}
+}
+
 // tileEntry holds a preloaded tile image and its average color for fast matching.
 type tileEntry struct {
 	path     string
@@ -128,6 +142,11 @@ func DebugLog(hypothesisId, message string, data map[string]interface{}) {
 // tileSize is the side length of each square tile in pixels.
 // Returns an error if no tiles are loaded or generation fails.
 func (g *Generator) Generate(target image.Image, tileSize int) (image.Image, error) {
+	return g.GenerateWithOptions(target, tileSize, DefaultOptions())
+}
+
+// GenerateWithOptions creates a photo mosaic using explicit visual options.
+func (g *Generator) GenerateWithOptions(target image.Image, tileSize int, opts Options) (image.Image, error) {
 	g.mu.RLock()
 	tiles := g.tiles
 	g.mu.RUnlock()
@@ -140,6 +159,7 @@ func (g *Generator) Generate(target image.Image, tileSize int) (image.Image, err
 	if tileSize < 1 {
 		tileSize = 1
 	}
+	opts.SourceBlend = clamp01(opts.SourceBlend)
 
 	bounds := target.Bounds()
 	out := image.NewNRGBA(bounds)
@@ -153,6 +173,7 @@ func (g *Generator) Generate(target image.Image, tileSize int) (image.Image, err
 		"bounds":    map[string]int{"minX": bounds.Min.X, "minY": bounds.Min.Y, "maxX": bounds.Max.X, "maxY": bounds.Max.Y},
 		"width":     bounds.Dx(),
 		"height":    bounds.Dy(),
+		"blend":     opts.SourceBlend,
 	})
 	// #endregion
 
@@ -199,6 +220,10 @@ func (g *Generator) Generate(target image.Image, tileSize int) (image.Image, err
 			lastRegionColor = regionColor
 			// #endregion
 		}
+	}
+
+	if opts.SourceBlend > 0 {
+		blendWithTarget(out, target, opts.SourceBlend)
 	}
 
 	// #region agent log
@@ -355,8 +380,39 @@ func colorCorrectTile(tile image.Image, tileColor, targetColor RGB) image.Image 
 	return out
 }
 
+func blendWithTarget(out *image.NRGBA, target image.Image, alpha float64) {
+	bounds := out.Bounds()
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			mosaicColor := out.NRGBAAt(x, y)
+			targetColor := nrgbaAt(target, x, y)
+
+			out.SetNRGBA(x, y, color.NRGBA{
+				R: blendChannel(mosaicColor.R, targetColor.R, alpha),
+				G: blendChannel(mosaicColor.G, targetColor.G, alpha),
+				B: blendChannel(mosaicColor.B, targetColor.B, alpha),
+				A: blendChannel(mosaicColor.A, targetColor.A, alpha),
+			})
+		}
+	}
+}
+
+func blendChannel(base, overlay uint8, alpha float64) uint8 {
+	return clamp8(float64(base)*(1-alpha) + float64(overlay)*alpha)
+}
+
 func rgbTo8Bit(c RGB) [3]float64 {
 	return [3]float64{c[0] / 257, c[1] / 257, c[2] / 257}
+}
+
+func clamp01(v float64) float64 {
+	if v <= 0 {
+		return 0
+	}
+	if v >= 1 {
+		return 1
+	}
+	return v
 }
 
 func clamp8(v float64) uint8 {

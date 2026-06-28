@@ -184,6 +184,44 @@ func TestGenerator_Generate_WithTiles(t *testing.T) {
 	}
 }
 
+func TestGenerator_GenerateWithOptions_SourceBlend(t *testing.T) {
+	dir := t.TempDir()
+	tile := createTestImage(10, 10, color.RGBA{0, 0, 255, 255})
+	f, err := os.Create(filepath.Join(dir, "blue.jpg"))
+	if err != nil {
+		t.Fatalf("create tile: %v", err)
+	}
+	if err := jpeg.Encode(f, tile, nil); err != nil {
+		f.Close()
+		t.Fatalf("encode tile: %v", err)
+	}
+	f.Close()
+
+	g := NewGenerator()
+	if err := g.LoadTiles(dir); err != nil {
+		t.Fatalf("LoadTiles: %v", err)
+	}
+
+	target := createTestImage(10, 10, color.RGBA{200, 10, 10, 255})
+	pureTile, err := g.GenerateWithOptions(target, 10, Options{SourceBlend: 0})
+	if err != nil {
+		t.Fatalf("GenerateWithOptions pure tile: %v", err)
+	}
+	fullBlend, err := g.GenerateWithOptions(target, 10, Options{SourceBlend: 1})
+	if err != nil {
+		t.Fatalf("GenerateWithOptions full blend: %v", err)
+	}
+
+	pureColor := color.NRGBAModel.Convert(pureTile.At(0, 0)).(color.NRGBA)
+	fullColor := color.NRGBAModel.Convert(fullBlend.At(0, 0)).(color.NRGBA)
+	if fullColor.R != 200 || fullColor.G != 10 || fullColor.B != 10 {
+		t.Errorf("full blend pixel = %v, want target color", fullColor)
+	}
+	if pureColor == fullColor {
+		t.Errorf("pure tile output should differ from full source blend")
+	}
+}
+
 func TestGenerator_Generate_TileSizeClamped(t *testing.T) {
 	dir := t.TempDir()
 	img := createTestImage(5, 5, color.RGBA{128, 128, 128, 255})
