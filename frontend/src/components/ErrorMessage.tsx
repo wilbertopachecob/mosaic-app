@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { AlertCircle, AlertTriangle, Info, X } from "lucide-react";
 
 interface ErrorMessageProps {
@@ -18,6 +19,7 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({
   onDismiss,
   type = "error",
 }) => {
+  const { t } = useTranslation();
   const Icon = iconMap[type];
 
   return (
@@ -31,7 +33,7 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({
           type="button"
           className="icon-button"
           onClick={onDismiss}
-          aria-label="Close"
+          aria-label={t("error.close")}
         >
           <X size={16} aria-hidden="true" />
         </button>

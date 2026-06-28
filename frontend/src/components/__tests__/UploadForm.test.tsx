@@ -1,7 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import UploadForm from '../UploadForm';
+import { renderWithProviders } from '../../testUtils';
 
 // Mock functions
 const mockHandleSubmit = jest.fn();
@@ -26,7 +27,7 @@ describe('UploadForm', () => {
   });
 
   it('renders all form elements', () => {
-    render(<UploadForm {...defaultProps} />);
+    renderWithProviders(<UploadForm {...defaultProps} />);
     
     expect(screen.getByLabelText(/select image/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/tile size/i)).toBeInTheDocument();
@@ -35,7 +36,7 @@ describe('UploadForm', () => {
   });
 
   it('displays correct tile size options', () => {
-    render(<UploadForm {...defaultProps} />);
+    renderWithProviders(<UploadForm {...defaultProps} />);
     
     const select = screen.getByRole('combobox');
     expect(select).toHaveValue('20');
@@ -47,7 +48,7 @@ describe('UploadForm', () => {
   });
 
   it('calls handleSubmit when form is submitted', () => {
-    render(<UploadForm {...defaultProps} />);
+    renderWithProviders(<UploadForm {...defaultProps} />);
     
     const submitButton = screen.getByRole('button', { name: /generate mosaic/i });
     fireEvent.click(submitButton);
@@ -56,7 +57,7 @@ describe('UploadForm', () => {
   });
 
   it('calls handleTileSizeChange when tile size is changed', () => {
-    render(<UploadForm {...defaultProps} />);
+    renderWithProviders(<UploadForm {...defaultProps} />);
     
     const select = screen.getByRole('combobox');
     fireEvent.change(select, { target: { value: '50' } });
@@ -65,7 +66,7 @@ describe('UploadForm', () => {
   });
 
   it('calls handleBlendChange when blend is changed', () => {
-    render(<UploadForm {...defaultProps} />);
+    renderWithProviders(<UploadForm {...defaultProps} />);
 
     const blend = screen.getByLabelText(/source blend/i);
     fireEvent.change(blend, { target: { value: '0.55' } });
@@ -74,14 +75,14 @@ describe('UploadForm', () => {
   });
 
   it('explains source blend in help text', () => {
-    render(<UploadForm {...defaultProps} />);
+    renderWithProviders(<UploadForm {...defaultProps} />);
 
     expect(screen.getByText(/purer tiles/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/blend help/i)).toHaveAttribute('title', expect.stringContaining('original image'));
   });
 
   it('calls handleFileChange when file is selected', async () => {
-    render(<UploadForm {...defaultProps} />);
+    renderWithProviders(<UploadForm {...defaultProps} />);
     
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
     const input = screen.getByLabelText(/select image/i);
@@ -94,20 +95,20 @@ describe('UploadForm', () => {
   });
 
   it('shows loading state when isLoading is true', () => {
-    render(<UploadForm {...defaultProps} isLoading={true} />);
+    renderWithProviders(<UploadForm {...defaultProps} isLoading={true} />);
     
     expect(screen.getByText(/generating mosaic/i)).toBeInTheDocument();
     expect(screen.getByRole('button')).toBeDisabled();
   });
 
   it('disables submit button when isBtnDisabled is true', () => {
-    render(<UploadForm {...defaultProps} isBtnDisabled={true} />);
+    renderWithProviders(<UploadForm {...defaultProps} isBtnDisabled={true} />);
     
     expect(screen.getByRole('button')).toBeDisabled();
   });
 
   it('disables form elements when loading', () => {
-    render(<UploadForm {...defaultProps} isLoading={true} />);
+    renderWithProviders(<UploadForm {...defaultProps} isLoading={true} />);
     
     expect(screen.getByLabelText(/select image/i)).toBeDisabled();
     expect(screen.getByRole('combobox')).toBeDisabled();
@@ -115,7 +116,7 @@ describe('UploadForm', () => {
   });
 
   it('shows processing info when loading', () => {
-    render(<UploadForm {...defaultProps} isLoading={true} />);
+    renderWithProviders(<UploadForm {...defaultProps} isLoading={true} />);
     
     expect(screen.getByText(/processing may take a few moments/i)).toBeInTheDocument();
   });

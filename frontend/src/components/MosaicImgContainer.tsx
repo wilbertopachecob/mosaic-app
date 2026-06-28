@@ -1,4 +1,5 @@
 import React, { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Clock3,
   Download,
@@ -31,6 +32,8 @@ const MosaicImgContainer: React.FC<MosaicImgContainerProps> = ({
   hasSourceImage,
   onReset,
 }) => {
+  const { t } = useTranslation();
+
   const handleDownload = useCallback(() => {
     if (!mosaicImg) return;
 
@@ -51,7 +54,7 @@ const MosaicImgContainer: React.FC<MosaicImgContainerProps> = ({
 
   const displayFileName = fileName
     ? fileName.substring(0, 28) + (fileName.length > 28 ? "..." : "")
-    : "No source selected";
+    : t("result.noSource");
   const blendPercent = `${Math.round(Number(blend) * 100)}%`;
 
   return (
@@ -60,53 +63,55 @@ const MosaicImgContainer: React.FC<MosaicImgContainerProps> = ({
         {isLoading ? (
           <div className="result-state">
             <Loader2 className="spin" size={40} aria-hidden="true" />
-            <strong>Building your mosaic</strong>
-            <span>Matching tiles and blending the final image.</span>
+            <strong>{t("result.building")}</strong>
+            <span>{t("result.buildingHint")}</span>
           </div>
         ) : mosaicImg ? (
           <img
             src={`data:image/jpeg;base64,${mosaicImg}`}
-            alt="Generated mosaic result"
+            alt={t("result.mosaicAlt")}
           />
         ) : (
           <div className="result-state">
             <Image size={44} aria-hidden="true" />
-            <strong>{hasSourceImage ? "Ready to generate" : "Result preview"}</strong>
+            <strong>
+              {hasSourceImage ? t("result.ready") : t("result.preview")}
+            </strong>
             <span>
               {hasSourceImage
-                ? "Your mosaic will appear here after generation."
-                : "Select an image and tune the controls to begin."}
+                ? t("result.readyHint")
+                : t("result.previewHint")}
             </span>
           </div>
         )}
       </div>
 
-      <dl className="result-metadata" aria-label="Mosaic output details">
+      <dl className="result-metadata" aria-label={t("result.metadataAria")}>
         <div>
           <dt>
             <Clock3 size={15} aria-hidden="true" />
-            Time
+            {t("result.time")}
           </dt>
           <dd>{mosaicImg ? formatDuration(duration) : "-"}</dd>
         </div>
         <div>
           <dt>
             <FileImage size={15} aria-hidden="true" />
-            File
+            {t("result.file")}
           </dt>
           <dd>{displayFileName}</dd>
         </div>
         <div>
           <dt>
             <Grid3X3 size={15} aria-hidden="true" />
-            Tile
+            {t("result.tile")}
           </dt>
           <dd>{tileSize}px</dd>
         </div>
         <div>
           <dt>
             <SlidersHorizontal size={15} aria-hidden="true" />
-            Blend
+            {t("result.blend")}
           </dt>
           <dd>{blendPercent}</dd>
         </div>
@@ -117,10 +122,10 @@ const MosaicImgContainer: React.FC<MosaicImgContainerProps> = ({
           onClick={handleDownload}
           className="download-action"
           disabled={!mosaicImg}
-          title="Download mosaic image"
+          title={t("result.downloadTitle")}
         >
           <Download size={18} aria-hidden="true" />
-          Download mosaic
+          {t("result.download")}
         </button>
 
         {onReset && (
@@ -128,10 +133,10 @@ const MosaicImgContainer: React.FC<MosaicImgContainerProps> = ({
             onClick={onReset}
             className="secondary-action"
             type="button"
-            title="Start over with a new image"
+            title={t("result.resetTitle")}
           >
             <RefreshCw size={16} aria-hidden="true" />
-            Reset
+            {t("result.reset")}
           </button>
         )}
       </div>

@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Images, Sparkles, Wand2 } from "lucide-react";
 import MosaicImgContainer from "./components/MosaicImgContainer";
 import UploadForm from "./components/UploadForm";
 import ErrorMessage from "./components/ErrorMessage";
+import HeaderControls from "./components/HeaderControls";
 import "./App.css";
 
 interface APIResponse {
@@ -19,6 +21,7 @@ interface APIError {
 type AppState = "idle" | "loading" | "success" | "error";
 
 function App() {
+  const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [tileSize, setTileSize] = useState<string>("20");
@@ -61,15 +64,18 @@ function App() {
     setError(null);
   }, []);
 
-  const handleError = useCallback((error: Error) => {
-    console.error("API Error:", error);
-    setError(error.message || "An unexpected error occurred");
-    setAppState("error");
-  }, []);
+  const handleError = useCallback(
+    (error: Error) => {
+      console.error("API Error:", error);
+      setError(error.message || t("input.unexpectedError"));
+      setAppState("error");
+    },
+    [t]
+  );
 
   const handleSubmit = useCallback(async () => {
     if (!file) {
-      setError("Select an image before generating a mosaic.");
+      setError(t("input.selectBeforeGenerate"));
       setAppState("error");
       return;
     }
@@ -93,7 +99,7 @@ function App() {
     } catch (error) {
       handleError(error as Error);
     }
-  }, [file, tileSize, blend, handleResponse, handleError]);
+  }, [file, tileSize, blend, handleResponse, handleError, t]);
 
   const handleReset = useCallback(() => {
     setFile(null);
@@ -103,13 +109,21 @@ function App() {
     setAppState("idle");
   }, []);
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-  };
+  const formatFileSize = useCallback(
+    (bytes: number): string => {
+      if (bytes === 0) return `0 ${t("units.bytes")}`;
+      const k = 1024;
+      const sizes = [
+        t("units.bytes"),
+        t("units.kb"),
+        t("units.mb"),
+        t("units.gb"),
+      ];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    },
+    [t]
+  );
 
   return (
     <main className="app-shell">
@@ -118,50 +132,47 @@ function App() {
           <div>
             <div className="eyebrow">
               <Sparkles size={16} aria-hidden="true" />
-              Photo mosaic workspace
+              {t("header.eyebrow")}
             </div>
-            <h1 className="app-title">Mosaic Generator</h1>
-            <p className="app-subtitle">
-              Upload an image, tune the mosaic texture, and generate a polished
-              downloadable result from your local tile library.
-            </p>
+            <h1 className="app-title">{t("header.title")}</h1>
+            <p className="app-subtitle">{t("header.subtitle")}</p>
           </div>
-          <div className="header-metric" aria-label="Generator method">
-            <Images size={18} aria-hidden="true" />
-            <span>Photo tiles + source blend</span>
-          </div>
+          <HeaderControls />
         </header>
 
-        <section className="workspace-grid" aria-label="Mosaic generator workspace">
+        <section
+          className="workspace-grid"
+          aria-label={t("workspace.ariaLabel")}
+        >
           <section className="panel input-panel" aria-labelledby="input-heading">
             <div className="panel-heading">
               <div>
-                <p className="section-kicker">Step 1</p>
-                <h2 id="input-heading">Source image</h2>
+                <p className="section-kicker">{t("input.step")}</p>
+                <h2 id="input-heading">{t("input.title")}</h2>
               </div>
               <Wand2 size={20} aria-hidden="true" />
             </div>
 
             <div className={`preview-frame ${previewUrl ? "has-image" : ""}`}>
               {previewUrl ? (
-                <img src={previewUrl} alt="Selected source preview" />
+                <img src={previewUrl} alt={t("input.previewAlt")} />
               ) : (
                 <div className="preview-empty">
                   <Images size={42} aria-hidden="true" />
-                  <strong>No image selected</strong>
-                  <span>Your preview will appear here before generation.</span>
+                  <strong>{t("input.noImage")}</strong>
+                  <span>{t("input.previewHint")}</span>
                 </div>
               )}
             </div>
 
             {file && (
-              <dl className="file-summary" aria-label="Selected file details">
+              <dl className="file-summary" aria-label={t("input.title")}>
                 <div>
-                  <dt>File</dt>
+                  <dt>{t("input.file")}</dt>
                   <dd>{file.name}</dd>
                 </div>
                 <div>
-                  <dt>Size</dt>
+                  <dt>{t("input.size")}</dt>
                   <dd>{formatFileSize(file.size)}</dd>
                 </div>
               </dl>
@@ -192,8 +203,8 @@ function App() {
           <section className="panel output-panel" aria-labelledby="output-heading">
             <div className="panel-heading">
               <div>
-                <p className="section-kicker">Step 2</p>
-                <h2 id="output-heading">Generated mosaic</h2>
+                <p className="section-kicker">{t("output.step")}</p>
+                <h2 id="output-heading">{t("output.title")}</h2>
               </div>
             </div>
 

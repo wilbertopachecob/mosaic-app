@@ -1,33 +1,34 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import App from './App';
+import { renderWithProviders } from './testUtils';
 
 test('renders mosaic generator title', () => {
-  render(<App />);
+  renderWithProviders(<App />);
   const titleElement = screen.getByText(/mosaic generator/i);
   expect(titleElement).toBeInTheDocument();
 });
 
 test('renders upload form', () => {
-  render(<App />);
+  renderWithProviders(<App />);
   const uploadLabel = screen.getByText(/select image/i);
   expect(uploadLabel).toBeInTheDocument();
 });
 
 test('renders tile size selector', () => {
-  render(<App />);
+  renderWithProviders(<App />);
   const tileSizeLabel = screen.getByText(/tile size/i);
   expect(tileSizeLabel).toBeInTheDocument();
 });
 
 test('renders source blend control', () => {
-  render(<App />);
+  renderWithProviders(<App />);
   const blendControl = screen.getByRole('slider', { name: /source blend/i });
   expect(blendControl).toBeInTheDocument();
 });
 
 test('renders generate button', () => {
-  render(<App />);
+  renderWithProviders(<App />);
   const generateButton = screen.getByText(/generate mosaic/i);
   expect(generateButton).toBeInTheDocument();
 });

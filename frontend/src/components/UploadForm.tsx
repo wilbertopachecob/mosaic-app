@@ -3,8 +3,10 @@ import React, {
   DragEvent,
   MouseEvent,
   useCallback,
+  useMemo,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 import {
   HelpCircle,
   ImagePlus,
@@ -25,16 +27,7 @@ interface UploadFormProps {
   handleBlendChange: (blend: string) => void;
 }
 
-const tileOptions = [
-  { value: "5", label: "5px - Very fine" },
-  { value: "10", label: "10px - Fine" },
-  { value: "15", label: "15px - Medium" },
-  { value: "20", label: "20px - Standard" },
-  { value: "25", label: "25px - Coarse" },
-  { value: "30", label: "30px - Very coarse" },
-  { value: "50", label: "50px - Large" },
-  { value: "100", label: "100px - Poster blocks" },
-];
+const tileValues = ["5", "10", "15", "20", "25", "30", "50", "100"];
 
 const UploadForm: React.FC<UploadFormProps> = ({
   selectedTileSize,
@@ -46,24 +39,34 @@ const UploadForm: React.FC<UploadFormProps> = ({
   handleTileSizeChange,
   handleBlendChange,
 }) => {
+  const { t } = useTranslation();
   const [isDragging, setIsDragging] = useState(false);
+
+  const tileOptions = useMemo(
+    () =>
+      tileValues.map((value) => ({
+        value,
+        label: t(`tileSize.${value}`),
+      })),
+    [t]
+  );
 
   const validateAndSetFile = useCallback(
     (file: File) => {
       if (!file.type.startsWith("image/")) {
-        alert("Please select an image file");
+        alert(t("upload.invalidFile"));
         return;
       }
 
       const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
-        alert("File size must be less than 10MB");
+        alert(t("upload.fileTooLarge"));
         return;
       }
 
       handleFileChange(file);
     },
-    [handleFileChange]
+    [handleFileChange, t]
   );
 
   const onSubmit = useCallback(
@@ -143,12 +146,12 @@ const UploadForm: React.FC<UploadFormProps> = ({
             <UploadCloud size={24} aria-hidden="true" />
           </span>
           <span className="upload-copy">
-            <strong>Select image</strong>
-            <small>Drag a JPG, PNG, or WebP here. Max 10MB.</small>
+            <strong>{t("upload.selectImage")}</strong>
+            <small>{t("upload.dragHint")}</small>
           </span>
           <span className="upload-action">
             <ImagePlus size={16} aria-hidden="true" />
-            Browse
+            {t("upload.browse")}
           </span>
         </label>
       </div>
@@ -157,7 +160,7 @@ const UploadForm: React.FC<UploadFormProps> = ({
         <div className="control-group">
           <label htmlFor="tileSize" className="field-label">
             <SlidersHorizontal size={16} aria-hidden="true" />
-            Tile size
+            {t("upload.tileSize")}
           </label>
           <select
             name="tileSize"
@@ -173,20 +176,20 @@ const UploadForm: React.FC<UploadFormProps> = ({
               </option>
             ))}
           </select>
-          <p className="field-help">Smaller tiles preserve more detail.</p>
+          <p className="field-help">{t("upload.tileSizeHelp")}</p>
         </div>
 
         <div className="control-group">
           <div className="field-label-row">
             <label htmlFor="blend" className="field-label">
               <Wand2 size={16} aria-hidden="true" />
-              Source blend
+              {t("upload.sourceBlend")}
             </label>
             <span
               className="tooltip-icon"
               role="img"
-              aria-label="Blend help"
-              title="Controls how much of the original image is blended over the mosaic. Lower values show purer photo tiles; higher values look more like the source image."
+              aria-label={t("upload.blendHelpAria")}
+              title={t("upload.blendHelpTitle")}
             >
               <HelpCircle size={15} aria-hidden="true" />
             </span>
@@ -208,7 +211,7 @@ const UploadForm: React.FC<UploadFormProps> = ({
             <span className="range-value">{blendPercent}%</span>
           </div>
           <p id="blendHelp" className="field-help">
-            Lower is purer tiles; higher preserves faces and edges.
+            {t("upload.blendHelp")}
           </p>
         </div>
       </div>
@@ -222,20 +225,18 @@ const UploadForm: React.FC<UploadFormProps> = ({
         {isLoading ? (
           <>
             <Loader2 className="spin" size={18} aria-hidden="true" />
-            Generating mosaic
+            {t("upload.generating")}
           </>
         ) : (
           <>
             <Wand2 size={18} aria-hidden="true" />
-            Generate mosaic
+            {t("upload.generate")}
           </>
         )}
       </button>
 
       {isLoading && (
-        <p className="processing-note">
-          Processing may take a few moments depending on image size and tile size.
-        </p>
+        <p className="processing-note">{t("upload.processing")}</p>
       )}
     </form>
   );
