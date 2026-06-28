@@ -57,6 +57,7 @@ describe("accessibility", () => {
         <MosaicImgContainer
           mosaicImg={null}
           duration={0}
+          fileName={undefined}
           tileSize="20"
           blend="0.42"
           isLoading={false}
@@ -90,6 +91,7 @@ describe("accessibility", () => {
         <MosaicImgContainer
           mosaicImg={null}
           duration={0}
+          fileName={undefined}
           tileSize="20"
           blend="0.42"
           isLoading

@@ -1,10 +1,8 @@
-import { axe, type AxeResults } from "jest-axe";
+import { axe } from "jest-axe";
 import type { RenderResult } from "@testing-library/react";
 
 /** Runs axe against a rendered container and returns the audit results. */
-export async function runAxeAudit(
-  container: HTMLElement
-): Promise<AxeResults> {
+export async function runAxeAudit(container: HTMLElement) {
   return axe(container);
 }
 

@@ -189,7 +189,7 @@ run_tests() {
     # Run frontend tests
     print_status "Running frontend tests..."
     cd frontend
-    npm test -- --watchAll=false --coverage
+    npm run test:coverage
     cd ..
     
     print_success "All tests completed"

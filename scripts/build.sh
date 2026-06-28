@@ -105,7 +105,7 @@ build_frontend() {
     
     # Run tests
     print_status "Running frontend tests..."
-    npm test -- --watchAll=false --passWithNoTests
+    npm run test:run
     
     # Type check
     print_status "Running TypeScript type check..."
@@ -284,7 +284,7 @@ main() {
             check_prerequisites
             print_status "Running all tests..."
             go test ./...
-            cd frontend && npm test -- --watchAll=false --passWithNoTests && cd ..
+            cd frontend && npm run test:run && cd ..
             print_success "All tests passed!"
             ;;
         *)

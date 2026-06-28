@@ -1,6 +1,5 @@
-/// <reference types="vitest/config" />
 import path from "node:path";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 // https://vite.dev/config/
@@ -18,9 +17,14 @@ export default defineConfig({
       "/api": "http://localhost:8080",
     },
   },
+  build: {
+    // Keep CRA's output folder so existing deploy scripts (scripts/build.sh,
+    // main.go static serving) continue to work without changes.
+    outDir: "build",
+  },
   test: {
     globals: true,
-    environment: "jsdom",
+    environment: "happy-dom",
     setupFiles: "./src/setupTests.ts",
     css: true,
     coverage: {
