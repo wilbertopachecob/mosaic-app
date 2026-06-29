@@ -29,6 +29,17 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Ensure the Go bin directory is on PATH so tools like Air are found
+# after `go install` without requiring a shell restart.
+if command -v go >/dev/null 2>&1; then
+    GO_BIN="$(go env GOBIN)"
+    [ -z "$GO_BIN" ] && GO_BIN="$(go env GOPATH)/bin"
+    case ":$PATH:" in
+        *":$GO_BIN:"*) ;;
+        *) export PATH="$GO_BIN:$PATH" ;;
+    esac
+fi
+
 # Function to check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
@@ -41,7 +52,7 @@ install_dev_deps() {
     # Install Air for Go hot reloading
     if ! command_exists air; then
         print_status "Installing Air for Go hot reloading..."
-        go install github.com/cosmtrek/air@latest
+        go install github.com/air-verse/air@latest
     fi
     
     # Install frontend dependencies
@@ -178,7 +189,7 @@ run_tests() {
     # Run frontend tests
     print_status "Running frontend tests..."
     cd frontend
-    npm test -- --watchAll=false --coverage
+    npm run test:coverage
     cd ..
     
     print_success "All tests completed"

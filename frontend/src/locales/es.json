@@ -1,0 +1,86 @@
+{
+  "header": {
+    "eyebrow": "Espacio de trabajo de mosaico fotográfico",
+    "title": "Generador de mosaicos",
+    "subtitle": "Sube una imagen, ajusta la textura del mosaico y genera un resultado descargable a partir de tu biblioteca local de tiles.",
+    "metric": "Tiles fotográficos + mezcla con la fuente"
+  },
+  "controls": {
+    "language": "Idioma",
+    "themeLight": "Cambiar a modo oscuro",
+    "themeDark": "Cambiar a modo claro"
+  },
+  "workspace": {
+    "ariaLabel": "Espacio de trabajo del generador de mosaicos"
+  },
+  "input": {
+    "step": "Paso 1",
+    "title": "Imagen de origen",
+    "previewAlt": "Vista previa de la imagen seleccionada",
+    "noImage": "Ninguna imagen seleccionada",
+    "previewHint": "Tu vista previa aparecerá aquí antes de generar.",
+    "file": "Archivo",
+    "size": "Tamaño",
+    "selectBeforeGenerate": "Selecciona una imagen antes de generar un mosaico.",
+    "unexpectedError": "Ocurrió un error inesperado",
+    "serverUnreachable": "No se pudo conectar con el servidor. Asegúrate de que el backend esté en ejecución e inténtalo de nuevo."
+  },
+  "output": {
+    "step": "Paso 2",
+    "title": "Mosaico generado"
+  },
+  "upload": {
+    "selectImage": "Seleccionar imagen",
+    "dragHint": "Arrastra un JPG, PNG o WebP aquí. Máx. 10 MB.",
+    "browse": "Explorar",
+    "tileSize": "Tamaño del tile",
+    "tileSizeHelp": "Tiles más pequeños conservan más detalle.",
+    "sourceBlend": "Mezcla con la fuente",
+    "blendHelpTitle": "Controla cuánto de la imagen original se mezcla sobre el mosaico. Valores bajos muestran tiles más puros; valores altos se parecen más a la imagen fuente.",
+    "blendHelp": "Más bajo = tiles más puros; más alto = conserva rostros y bordes.",
+    "blendHelpAria": "Ayuda de mezcla",
+    "generate": "Generar mosaico",
+    "generating": "Generando mosaico",
+    "processing": "El procesamiento puede tardar unos momentos según el tamaño de la imagen y del tile.",
+    "invalidFile": "Selecciona un archivo de imagen",
+    "fileTooLarge": "El archivo debe pesar menos de 10 MB"
+  },
+  "tileSize": {
+    "5": "5px - Muy fino",
+    "10": "10px - Fino",
+    "15": "15px - Medio",
+    "20": "20px - Estándar",
+    "25": "25px - Grueso",
+    "30": "30px - Muy grueso",
+    "50": "50px - Grande",
+    "100": "100px - Bloques de póster"
+  },
+  "result": {
+    "building": "Construyendo tu mosaico",
+    "buildingHint": "Emparejando tiles y mezclando la imagen final.",
+    "ready": "Listo para generar",
+    "preview": "Vista previa del resultado",
+    "readyHint": "Tu mosaico aparecerá aquí después de generar.",
+    "previewHint": "Selecciona una imagen y ajusta los controles para comenzar.",
+    "mosaicAlt": "Resultado del mosaico generado",
+    "metadataAria": "Detalles del mosaico generado",
+    "time": "Tiempo",
+    "file": "Archivo",
+    "tile": "Tile",
+    "blend": "Mezcla",
+    "noSource": "Sin imagen de origen",
+    "download": "Descargar mosaico",
+    "downloadTitle": "Descargar imagen del mosaico",
+    "reset": "Reiniciar",
+    "resetTitle": "Empezar de nuevo con otra imagen"
+  },
+  "error": {
+    "close": "Cerrar"
+  },
+  "units": {
+    "bytes": "Bytes",
+    "kb": "KB",
+    "mb": "MB",
+    "gb": "GB"
+  }
+}

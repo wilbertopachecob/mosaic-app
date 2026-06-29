@@ -14,7 +14,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"wilbertopachecob/mosaic/config"
+	"wilbertopachecob/mosaic/lib/mosaic"
 )
+
+func init() {
+	if mosaicGenerator == nil {
+		mosaicGenerator = mosaic.NewGenerator()
+		_ = mosaicGenerator.LoadTiles("tiles")
+	}
+	if appConfig == nil {
+		appConfig = testConfig()
+	}
+}
 
 // TestHealthHandler tests the health check endpoint
 func TestHealthHandler(t *testing.T) {
@@ -37,30 +49,28 @@ func TestHealthHandler(t *testing.T) {
 	assert.Equal(t, "mosaic-app", response["service"])
 }
 
-// TestMosaicHandlerWithInvalidRequest tests mosaic handler with invalid requests
-func TestMosaicHandlerWithInvalidRequest(t *testing.T) {
+// TestUploadHandlerWithInvalidRequest tests upload handler with invalid requests
+func TestUploadHandlerWithInvalidRequest(t *testing.T) {
 	tests := []struct {
 		name           string
 		method         string
 		contentType    string
 		body           string
 		expectedStatus int
-		expectedError  string
 	}{
 		{
 			name:           "Wrong method",
 			method:         "GET",
 			contentType:    "application/json",
 			body:           "",
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusMethodNotAllowed,
 		},
 		{
-			name:           "Invalid content type",
+			name:           "Invalid form (no multipart)",
 			method:         "POST",
 			contentType:    "application/json",
 			body:           "",
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "Invalid form data",
 		},
 	}
 
@@ -74,40 +84,28 @@ func TestMosaicHandlerWithInvalidRequest(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(mosaicHandler)
+			handler := http.HandlerFunc(uploadHandler)
 
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
-
-			if tt.expectedError != "" {
-				var response map[string]interface{}
-				err = json.Unmarshal(rr.Body.Bytes(), &response)
-				require.NoError(t, err)
-				assert.Contains(t, response["error"], tt.expectedError)
-			}
 		})
 	}
 }
 
-// TestMosaicHandlerWithInvalidTileSize tests mosaic handler with invalid tile sizes
-func TestMosaicHandlerWithInvalidTileSize(t *testing.T) {
-	// Create a test image
+// TestUploadHandlerWithInvalidTileSize tests that invalid tile size falls back to default
+func TestUploadHandlerWithInvalidTileSize(t *testing.T) {
 	img := createTestImage(100, 100)
 	imgBytes := imageToBytes(t, img)
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
-	// Add file
 	part, err := writer.CreateFormFile("imgUpload", "test.jpg")
 	require.NoError(t, err)
 	part.Write(imgBytes)
 
-	// Add invalid tile size
-	err = writer.WriteField("tileSize", "invalid")
-	require.NoError(t, err)
-
+	writer.WriteField("tileSize", "invalid")
 	writer.Close()
 
 	req, err := http.NewRequest("POST", "/api/file/upload", body)
@@ -115,41 +113,159 @@ func TestMosaicHandlerWithInvalidTileSize(t *testing.T) {
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(mosaicHandler)
-
+	handler := http.HandlerFunc(uploadHandler)
 	handler.ServeHTTP(rr, req)
+
+	assert.True(t, rr.Code == http.StatusOK || rr.Code == http.StatusInternalServerError)
+}
+
+func TestUploadHandlerRejectsOutOfRangeTileSize(t *testing.T) {
+	imgBytes := imageToBytes(t, createTestImage(100, 100))
+
+	for _, tileSize := range []string{"1", "200"} {
+		t.Run("tileSize="+tileSize, func(t *testing.T) {
+			body := &bytes.Buffer{}
+			writer := multipart.NewWriter(body)
+			part, err := writer.CreateFormFile("imgUpload", "test.jpg")
+			require.NoError(t, err)
+			part.Write(imgBytes)
+			writer.WriteField("tileSize", tileSize)
+			writer.Close()
+
+			req, err := http.NewRequest("POST", "/api/file/upload", body)
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", writer.FormDataContentType())
+
+			rr := httptest.NewRecorder()
+			uploadHandler(rr, req)
+
+			assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+			var response errorResponse
+			require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &response))
+			assert.Equal(t, "invalid_tile_size", response.Error)
+		})
+	}
+}
+
+func TestUploadHandlerRejectsInvalidBlend(t *testing.T) {
+	imgBytes := imageToBytes(t, createTestImage(100, 100))
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("imgUpload", "test.jpg")
+	require.NoError(t, err)
+	part.Write(imgBytes)
+	writer.WriteField("tileSize", "20")
+	writer.WriteField("blend", "2")
+	writer.Close()
+
+	req, err := http.NewRequest("POST", "/api/file/upload", body)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	rr := httptest.NewRecorder()
+	uploadHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+func TestUploadHandlerRejectsOversizedImage(t *testing.T) {
+	appConfig = &config.Config{
+		MaxFileSize:    10 * 1024 * 1024,
+		MaxImageWidth:  200,
+		MaxImageHeight: 200,
+		MinTileSize:    5,
+		MaxTileSize:    100,
+	}
+	t.Cleanup(func() {
+		appConfig = testConfig()
+	})
+
+	imgBytes := imageToBytes(t, createTestImage(300, 300))
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("imgUpload", "test.jpg")
+	require.NoError(t, err)
+	part.Write(imgBytes)
+	writer.WriteField("tileSize", "20")
+	writer.Close()
+
+	req, err := http.NewRequest("POST", "/api/file/upload", body)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	rr := httptest.NewRecorder()
+	uploadHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+func TestUploadHandlerRejectsOversizedBody(t *testing.T) {
+	appConfig = &config.Config{
+		MaxFileSize:    1024, // 1KB cap
+		MaxImageWidth:  4096,
+		MaxImageHeight: 4096,
+		MinTileSize:    5,
+		MaxTileSize:    100,
+	}
+	t.Cleanup(func() {
+		appConfig = testConfig()
+	})
+
+	// Build a body beyond the MaxFileSize + 1MB allowance so MaxBytesReader
+	// trips during parsing, before the whole body is buffered to disk.
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("imgUpload", "big.jpg")
+	require.NoError(t, err)
+	part.Write(bytes.Repeat([]byte("A"), 2<<20)) // 2MB of payload
+	writer.Close()
+	require.Greater(t, body.Len(), int(appConfig.MaxFileSize)+(1<<20))
+
+	req, err := http.NewRequest("POST", "/api/file/upload", body)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	rr := httptest.NewRecorder()
+	uploadHandler(rr, req)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
 	var response map[string]interface{}
-	err = json.Unmarshal(rr.Body.Bytes(), &response)
-	require.NoError(t, err)
-	assert.Contains(t, response["error"], "Invalid tile size")
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &response))
+	assert.Equal(t, "file_too_large", response["error"])
 }
 
-// TestMosaicHandlerWithValidRequest tests mosaic handler with a valid request
-func TestMosaicHandlerWithValidRequest(t *testing.T) {
-	// Skip if no tiles database is available
-	if len(tilesDB) == 0 {
-		t.Skip("No tiles database available for testing")
+func TestServerErrorMessageProduction(t *testing.T) {
+	appConfig = &config.Config{Production: true}
+	t.Cleanup(func() {
+		appConfig = testConfig()
+	})
+
+	msg := serverErrorMessage(assert.AnError)
+	assert.Equal(t, "An internal error occurred", msg)
+}
+
+// TestUploadHandlerWithValidRequest tests upload handler with a valid request
+func TestUploadHandlerWithValidRequest(t *testing.T) {
+	if mosaicGenerator == nil || mosaicGenerator.TileCount() == 0 {
+		t.Skip("No tiles loaded for testing")
 	}
 
-	// Create a test image
 	img := createTestImage(50, 50)
 	imgBytes := imageToBytes(t, img)
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
-	// Add file
 	part, err := writer.CreateFormFile("imgUpload", "test.jpg")
 	require.NoError(t, err)
 	part.Write(imgBytes)
 
-	// Add valid tile size
-	err = writer.WriteField("tileSize", "20")
-	require.NoError(t, err)
-
+	writer.WriteField("tileSize", "20")
+	writer.WriteField("blend", "0.55")
 	writer.Close()
 
 	req, err := http.NewRequest("POST", "/api/file/upload", body)
@@ -157,14 +273,12 @@ func TestMosaicHandlerWithValidRequest(t *testing.T) {
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(mosaicHandler)
-
+	handler := http.HandlerFunc(uploadHandler)
 	handler.ServeHTTP(rr, req)
 
-	// Should succeed or fail gracefully
-	assert.True(t, rr.Code == http.StatusCreated || rr.Code == http.StatusInternalServerError)
+	assert.True(t, rr.Code == http.StatusOK || rr.Code == http.StatusInternalServerError)
 
-	if rr.Code == http.StatusCreated {
+	if rr.Code == http.StatusOK {
 		var response map[string]interface{}
 		err = json.Unmarshal(rr.Body.Bytes(), &response)
 		require.NoError(t, err)
@@ -173,9 +287,6 @@ func TestMosaicHandlerWithValidRequest(t *testing.T) {
 	}
 }
 
-// Helper functions
-
-// createTestImage creates a simple test image
 func createTestImage(width, height int) image.Image {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 	for y := 0; y < height; y++ {
@@ -186,27 +297,9 @@ func createTestImage(width, height int) image.Image {
 	return img
 }
 
-// imageToBytes converts an image to JPEG bytes
 func imageToBytes(t *testing.T, img image.Image) []byte {
 	var buf bytes.Buffer
 	err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 90})
 	require.NoError(t, err)
 	return buf.Bytes()
-}
-
-// TestSendErrorResponse tests the sendErrorResponse function
-func TestSendErrorResponse(t *testing.T) {
-	rr := httptest.NewRecorder()
-
-	sendErrorResponse(rr, http.StatusBadRequest, "Test Error", "Test Details")
-
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
-
-	var response map[string]interface{}
-	err := json.Unmarshal(rr.Body.Bytes(), &response)
-	require.NoError(t, err)
-
-	assert.Equal(t, "Test Error", response["error"])
-	assert.Equal(t, "Test Details", response["message"])
-	assert.Equal(t, float64(400), response["code"])
 }

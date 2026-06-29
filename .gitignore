@@ -22,4 +22,16 @@ tiles
 go.work
 
 # executable
-mosaic
+/mosaic
+
+# debug logs
+debug-f1a3d5.log
+
+# frontend
+dist/
+
+# tmp
+tmp/
+
+# .env
+.env

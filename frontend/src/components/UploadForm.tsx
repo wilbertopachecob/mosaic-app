@@ -1,136 +1,247 @@
-import React, { ChangeEvent, MouseEvent, useCallback } from "react";
+import React, {
+  ChangeEvent,
+  DragEvent,
+  MouseEvent,
+  useCallback,
+  useMemo,
+  useState,
+} from "react";
+import { useTranslation } from "react-i18next";
+import {
+  HelpCircle,
+  ImagePlus,
+  Loader2,
+  SlidersHorizontal,
+  UploadCloud,
+  Wand2,
+} from "lucide-react";
 
-interface UploadFormProps {
+/** Props for the image upload and mosaic settings form. */
+type UploadFormProps = {
   selectedTileSize: string;
+  selectedBlend: string;
   isBtnDisabled: boolean;
   isLoading: boolean;
   handleSubmit: () => void;
   handleFileChange: (file: File) => void;
   handleTileSizeChange: (tile: string) => void;
-}
+  handleBlendChange: (blend: string) => void;
+};
 
+const tileValues = ["5", "10", "15", "20", "25", "30", "50", "100"];
+
+/**
+ * Upload zone and controls for tile size, source blend, and mosaic generation.
+ */
 const UploadForm: React.FC<UploadFormProps> = ({
   selectedTileSize,
+  selectedBlend,
   isBtnDisabled,
   isLoading,
   handleSubmit,
   handleFileChange,
   handleTileSizeChange,
+  handleBlendChange,
 }) => {
-  // Handle form submission
-  const onSubmit = useCallback((e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    handleSubmit();
-  }, [handleSubmit]);
+  const { t } = useTranslation();
+  const [isDragging, setIsDragging] = useState(false);
 
-  // Handle file selection
-  const onFileChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    const target = event.target;
-    if (target && target.files && target.files.length > 0) {
-      const file = target.files[0];
-      
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+  const tileOptions = useMemo(
+    () =>
+      tileValues.map((value) => ({
+        value,
+        label: t(`tileSize.${value}`),
+      })),
+    [t]
+  );
+
+  /** Validates file type and size before accepting an upload. */
+  const validateAndSetFile = useCallback(
+    (file: File) => {
+      if (!file.type.startsWith("image/")) {
+        alert(t("upload.invalidFile"));
         return;
       }
-      
-      // Validate file size (10MB limit)
-      const maxSize = 10 * 1024 * 1024; // 10MB
+
+      const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
-        alert('File size must be less than 10MB');
+        alert(t("upload.fileTooLarge"));
         return;
       }
-      
-      handleFileChange(file);
-    }
-  }, [handleFileChange]);
 
-  // Handle tile size change
-  const onTileSizeChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
-    handleTileSizeChange(event.target.value);
-  }, [handleTileSizeChange]);
+      handleFileChange(file);
+    },
+    [handleFileChange, t]
+  );
+
+  const onSubmit = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      handleSubmit();
+    },
+    [handleSubmit]
+  );
+
+  const onFileChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        validateAndSetFile(file);
+      }
+    },
+    [validateAndSetFile]
+  );
+
+  const onDragOver = useCallback((event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const onDragLeave = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const onDrop = useCallback(
+    (event: DragEvent<HTMLLabelElement>) => {
+      event.preventDefault();
+      setIsDragging(false);
+      const file = event.dataTransfer.files?.[0];
+      if (file) {
+        validateAndSetFile(file);
+      }
+    },
+    [validateAndSetFile]
+  );
+
+  const onTileSizeChange = useCallback(
+    (event: ChangeEvent<HTMLSelectElement>) => {
+      handleTileSizeChange(event.target.value);
+    },
+    [handleTileSizeChange]
+  );
+
+  const onBlendChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      handleBlendChange(event.target.value);
+    },
+    [handleBlendChange]
+  );
+
+  const blendPercent = Math.round(Number(selectedBlend) * 100);
 
   return (
-    <form className="mt-3">
-      {/* File Upload Section */}
-      <div className="mb-3">
-        <label htmlFor="imgUpload" className="form-label fw-bold">
-          <i className="fas fa-image me-2"></i>
-          Select Image
+    <form className="control-stack">
+      <div className="control-group">
+        <label
+          htmlFor="imgUpload"
+          className={`upload-zone ${isDragging ? "is-dragging" : ""}`}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+        >
+          <input
+            type="file"
+            name="imgUpload"
+            id="imgUpload"
+            onChange={onFileChange}
+            accept="image/*"
+            disabled={isLoading}
+          />
+          <span className="upload-icon">
+            <UploadCloud size={24} aria-hidden="true" />
+          </span>
+          <span className="upload-copy">
+            <strong>{t("upload.selectImage")}</strong>
+            <small>{t("upload.dragHint")}</small>
+          </span>
+          <span className="upload-action">
+            <ImagePlus size={16} aria-hidden="true" />
+            {t("upload.browse")}
+          </span>
         </label>
-        <input
-          type="file"
-          name="imgUpload"
-          id="imgUpload"
-          onChange={onFileChange}
-          className="form-control"
-          accept="image/*"
-          disabled={isLoading}
-        />
-        <div className="form-text">
-          Supported formats: JPG, PNG, GIF, BMP, TIFF, WebP (Max: 10MB)
+      </div>
+
+      <div className="settings-grid">
+        <div className="control-group">
+          <label htmlFor="tileSize" className="field-label">
+            <SlidersHorizontal size={16} aria-hidden="true" />
+            {t("upload.tileSize")}
+          </label>
+          <select
+            name="tileSize"
+            id="tileSize"
+            onChange={onTileSizeChange}
+            value={selectedTileSize}
+            className="field-control"
+            disabled={isLoading}
+          >
+            {tileOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <p className="field-help">{t("upload.tileSizeHelp")}</p>
+        </div>
+
+        <div className="control-group">
+          <div className="field-label-row">
+            <label htmlFor="blend" className="field-label">
+              <Wand2 size={16} aria-hidden="true" />
+              {t("upload.sourceBlend")}
+            </label>
+            <span
+              className="tooltip-icon"
+              role="img"
+              aria-label={t("upload.blendHelpAria")}
+              title={t("upload.blendHelpTitle")}
+            >
+              <HelpCircle size={15} aria-hidden="true" />
+            </span>
+          </div>
+          <div className="range-row">
+            <input
+              type="range"
+              name="blend"
+              id="blend"
+              min="0"
+              max="0.75"
+              step="0.01"
+              value={selectedBlend}
+              onChange={onBlendChange}
+              className="range-control"
+              disabled={isLoading}
+              aria-describedby="blendHelp"
+            />
+            <span className="range-value">{blendPercent}%</span>
+          </div>
+          <p id="blendHelp" className="field-help">
+            {t("upload.blendHelp")}
+          </p>
         </div>
       </div>
 
-      {/* Tile Size Selection */}
-      <div className="mb-3">
-        <label htmlFor="tileSize" className="form-label fw-bold">
-          <i className="fas fa-th me-2"></i>
-          Tile Size
-        </label>
-        <select
-          name="tileSize"
-          id="tileSize"
-          onChange={onTileSizeChange}
-          value={selectedTileSize}
-          className="form-select"
-          disabled={isLoading}
-        >
-          <option value="5">5px - Very Fine Detail</option>
-          <option value="10">10px - Fine Detail</option>
-          <option value="15">15px - Medium Detail</option>
-          <option value="20">20px - Standard</option>
-          <option value="25">25px - Coarse Detail</option>
-          <option value="30">30px - Very Coarse</option>
-          <option value="50">50px - Large Tiles</option>
-          <option value="100">100px - Very Large Tiles</option>
-        </select>
-        <div className="form-text">
-          Smaller tiles create more detailed mosaics but take longer to process
-        </div>
-      </div>
+      <button
+        onClick={onSubmit}
+        type="submit"
+        className="primary-action"
+        disabled={isBtnDisabled || isLoading}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="spin" size={18} aria-hidden="true" />
+            {t("upload.generating")}
+          </>
+        ) : (
+          <>
+            <Wand2 size={18} aria-hidden="true" />
+            {t("upload.generate")}
+          </>
+        )}
+      </button>
 
-      {/* Submit Button */}
-      <div className="d-grid">
-        <button
-          onClick={onSubmit}
-          type="submit"
-          className={`btn btn-primary ${isLoading ? 'disabled' : ''}`}
-          disabled={isBtnDisabled || isLoading}
-        >
-          {isLoading ? (
-            <>
-              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-              Generating Mosaic...
-            </>
-          ) : (
-            <>
-              <i className="fas fa-magic me-2"></i>
-              Generate Mosaic
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* Processing Info */}
       {isLoading && (
-        <div className="mt-3 text-center">
-          <small className="text-muted">
-            <i className="fas fa-info-circle me-1"></i>
-            Processing may take a few moments depending on image size and tile size
-          </small>
-        </div>
+        <p className="processing-note">{t("upload.processing")}</p>
       )}
     </form>
   );

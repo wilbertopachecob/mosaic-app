@@ -1,0 +1,86 @@
+{
+  "header": {
+    "eyebrow": "Photo mosaic workspace",
+    "title": "Mosaic Generator",
+    "subtitle": "Upload an image, tune the mosaic texture, and generate a polished downloadable result from your local tile library.",
+    "metric": "Photo tiles + source blend"
+  },
+  "controls": {
+    "language": "Language",
+    "themeLight": "Switch to dark mode",
+    "themeDark": "Switch to light mode"
+  },
+  "workspace": {
+    "ariaLabel": "Mosaic generator workspace"
+  },
+  "input": {
+    "step": "Step 1",
+    "title": "Source image",
+    "previewAlt": "Selected source preview",
+    "noImage": "No image selected",
+    "previewHint": "Your preview will appear here before generation.",
+    "file": "File",
+    "size": "Size",
+    "selectBeforeGenerate": "Select an image before generating a mosaic.",
+    "unexpectedError": "An unexpected error occurred",
+    "serverUnreachable": "Could not reach the server. Make sure the backend is running and try again."
+  },
+  "output": {
+    "step": "Step 2",
+    "title": "Generated mosaic"
+  },
+  "upload": {
+    "selectImage": "Select image",
+    "dragHint": "Drag a JPG, PNG, or WebP here. Max 10MB.",
+    "browse": "Browse",
+    "tileSize": "Tile size",
+    "tileSizeHelp": "Smaller tiles preserve more detail.",
+    "sourceBlend": "Source blend",
+    "blendHelpTitle": "Controls how much of the original image is blended over the mosaic. Lower values show purer photo tiles; higher values look more like the source image.",
+    "blendHelp": "Lower is purer tiles; higher preserves faces and edges.",
+    "blendHelpAria": "Blend help",
+    "generate": "Generate mosaic",
+    "generating": "Generating mosaic",
+    "processing": "Processing may take a few moments depending on image size and tile size.",
+    "invalidFile": "Please select an image file",
+    "fileTooLarge": "File size must be less than 10MB"
+  },
+  "tileSize": {
+    "5": "5px - Very fine",
+    "10": "10px - Fine",
+    "15": "15px - Medium",
+    "20": "20px - Standard",
+    "25": "25px - Coarse",
+    "30": "30px - Very coarse",
+    "50": "50px - Large",
+    "100": "100px - Poster blocks"
+  },
+  "result": {
+    "building": "Building your mosaic",
+    "buildingHint": "Matching tiles and blending the final image.",
+    "ready": "Ready to generate",
+    "preview": "Result preview",
+    "readyHint": "Your mosaic will appear here after generation.",
+    "previewHint": "Select an image and tune the controls to begin.",
+    "mosaicAlt": "Generated mosaic result",
+    "metadataAria": "Mosaic output details",
+    "time": "Time",
+    "file": "File",
+    "tile": "Tile",
+    "blend": "Blend",
+    "noSource": "No source selected",
+    "download": "Download mosaic",
+    "downloadTitle": "Download mosaic image",
+    "reset": "Reset",
+    "resetTitle": "Start over with a new image"
+  },
+  "error": {
+    "close": "Close"
+  },
+  "units": {
+    "bytes": "Bytes",
+    "kb": "KB",
+    "mb": "MB",
+    "gb": "GB"
+  }
+}
