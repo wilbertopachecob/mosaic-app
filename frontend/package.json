@@ -6,7 +6,7 @@
   "dependencies": {
     "bootstrap": "^5.3.3",
     "i18next": "^26.3.3",
-    "lucide-react": "^1.22.0",
+    "lucide-react": "^1.23.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-i18next": "^17.0.8",
