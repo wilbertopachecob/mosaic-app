@@ -1,8 +1,14 @@
-# Raspberry Pi Security Checklist
+# Raspberry Pi Security Checklist (Cloudflare Tunnel + Go)
 
-Deployment hardening for running mosaic-app on a Raspberry Pi exposed to the internet.
+Deployment hardening for running mosaic-app on a Raspberry Pi behind Cloudflare Tunnel.
 
-Application-side controls are already implemented (see [Implemented in the app](#implemented-in-the-app)). This document covers the remaining infrastructure and optional features to add later.
+Application-side controls are already implemented (see [Implemented in the app](#implemented-in-the-app)). This document focuses on infrastructure hardening for this specific context:
+
+- Go backend serving HTTP locally on the Pi
+- `cloudflared` exposing the app via Cloudflare Tunnel
+- No direct public exposure of the Go service port
+
+Cloudflare Tunnel works fine with a Go backend. The tunnel forwards HTTP traffic to your local Go service, regardless of backend language.
 
 ## Implemented in the app
 
@@ -40,34 +46,47 @@ LOG_LEVEL=info
 
 ---
 
-## TODO: Network layer
+## Network layer (Tunnel-first profile)
 
 ### 1. Bind the app to localhost only
 
-Do not expose the Go server directly on `0.0.0.0`. Run it on `127.0.0.1:8080` and put a reverse proxy in front.
+Do not expose the Go server directly to the internet. Keep it reachable only from localhost and route traffic through Cloudflare Tunnel.
 
-**Option A — systemd `Environment`:**
+**Recommended local path:**
 
 ```ini
 Environment=SERVER_PORT=8080
-# Listen on localhost by changing main.go or using a reverse proxy that targets 127.0.0.1:8080
+# cloudflared routes to http://127.0.0.1:8080
 ```
 
-**Option B — reverse proxy only** (see below): proxy to `http://127.0.0.1:8080`.
+In `/etc/cloudflared/config.yml`, route the hostname to the app:
 
-### 2. Firewall (`ufw`)
+```yaml
+tunnel: your-tunnel-name
+credentials-file: /etc/cloudflared/<tunnel-id>.json
+ingress:
+  - hostname: mosaic-generator.wilbertopachecob.dev
+    service: http://127.0.0.1:8080
+  - service: http_status:404
+```
+
+You can keep using one tunnel for multiple apps on the same Pi, for example:
+
+- `paint.wilbertopachecob.dev` -> `http://127.0.0.1:3000`
+- `tictactoe.wilbertopachecob.dev` -> `http://127.0.0.1:3001`
+- `mosaic-generator.wilbertopachecob.dev` -> `http://127.0.0.1:8080`
+
+### 2. Firewall (`ufw`) for tunnel setup
 
 ```bash
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow OpenSSH
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
 sudo ufw enable
 sudo ufw status
 ```
 
-Do **not** open port 8080 to the WAN. Only the reverse proxy (80/443) should be reachable.
+For Cloudflare Tunnel origin mode, you generally do **not** need inbound `80/443` open on the Pi. Keep port `8080` closed publicly.
 
 ### 3. SSH hardening
 
@@ -77,16 +96,16 @@ Do **not** open port 8080 to the WAN. Only the reverse proxy (80/443) should be 
 
 ---
 
-## TODO: Reverse proxy + TLS
+## Reverse proxy + TLS (optional fallback)
 
-Use Caddy (simplest) or Nginx in front of the app.
+Use Caddy or Nginx only if you decide to expose the Pi directly (no tunnel). With Cloudflare Tunnel, `cloudflared` is typically enough.
 
 ### Caddy (recommended)
 
 Install Caddy, then `/etc/caddy/Caddyfile`:
 
 ```caddyfile
-mosaic.example.com {
+mosaic-generator.wilbertopachecob.dev {
     reverse_proxy 127.0.0.1:8080
 
     # Optional: stricter body limit at the edge (5 MB)
@@ -105,17 +124,17 @@ mosaic.example.com {
 }
 ```
 
-Caddy obtains and renews Let's Encrypt certificates automatically.
+Caddy obtains and renews Let's Encrypt certificates automatically in direct-origin mode.
 
 ### Nginx (alternative)
 
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name mosaic.example.com;
+    server_name mosaic-generator.wilbertopachecob.dev;
 
-    ssl_certificate     /etc/letsencrypt/live/mosaic.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/mosaic.example.com/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/mosaic-generator.wilbertopachecob.dev/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/mosaic-generator.wilbertopachecob.dev/privkey.pem;
 
     client_max_body_size 5M;
 
@@ -135,7 +154,7 @@ limit_req_zone $binary_remote_addr zone=upload:10m rate=5r/h;
 
 ---
 
-## TODO: systemd service hardening
+## systemd service hardening + reboot persistence
 
 Create `/etc/systemd/system/mosaic.service`:
 
@@ -176,6 +195,42 @@ sudo useradd --system --no-create-home mosaic
 sudo chown -R mosaic:mosaic /opt/mosaic-app
 sudo systemctl daemon-reload
 sudo systemctl enable --now mosaic
+```
+
+### Ensure both services auto-start after Pi reboot
+
+```bash
+# App service
+sudo systemctl enable mosaic
+sudo systemctl restart mosaic
+
+# Tunnel service
+sudo systemctl enable cloudflared
+sudo systemctl restart cloudflared
+```
+
+Validation:
+
+```bash
+sudo systemctl is-enabled mosaic cloudflared
+sudo systemctl status mosaic cloudflared --no-pager
+curl -sS http://127.0.0.1:8080/api/health
+```
+
+After a reboot:
+
+```bash
+sudo reboot
+# after reconnecting via SSH:
+sudo systemctl status mosaic cloudflared --no-pager
+curl -I https://mosaic-generator.wilbertopachecob.dev/api/health
+```
+
+If you use PM2 for other apps on this same Pi, also persist PM2:
+
+```bash
+pm2 save
+pm2 startup
 ```
 
 ---
@@ -222,16 +277,17 @@ Same idea with a self-hosted VPN. More setup, full control.
 
 ---
 
-## TODO: Cloudflare proxy (optional)
+## Cloudflare hardening for tunnel
 
 If using a public domain:
 
-1. Point DNS to Cloudflare (orange cloud / proxied)
-2. Enable **Bot Fight Mode** or **Super Bot Fight Mode**
-3. Add a **WAF rate limiting rule** on `POST /api/file/upload`
-4. Use **Full (strict)** SSL between Cloudflare and your origin (Caddy/Nginx with a valid cert)
+1. Add the app hostname as a **Public Hostname** in your existing tunnel
+2. Remove conflicting `A/AAAA/CNAME` records before creating tunnel DNS routes
+3. Keep the hostname proxied through Cloudflare
+4. Add a **WAF rate limiting rule** on `POST /api/file/upload`
+5. Enable **Bot Fight Mode** or **Super Bot Fight Mode**
 
-Absorbs volumetric traffic before it hits the Pi.
+This matches your troubleshooting pattern: DNS conflicts are a common failure point, while PM2/system services may still be healthy.
 
 ---
 
@@ -248,12 +304,12 @@ Absorbs volumetric traffic before it hits the Pi.
 
 | Priority | Task | Effort |
 | --- | --- | --- |
-| 1 | Reverse proxy + TLS (Caddy) | Low |
-| 2 | Firewall — block 8080 from WAN | Low |
-| 3 | systemd service + non-root user + memory limit | Low |
-| 4 | Tight Pi `.env` (see above) | Low |
-| 5 | Tailscale instead of public exposure (if audience is small) | Low |
-| 6 | Cloudflare proxy + WAF | Medium |
+| 1 | Cloudflare Tunnel hostname + clean DNS conflicts | Low |
+| 2 | Firewall — allow SSH only, keep 8080 private | Low |
+| 3 | `systemd` persistence for `mosaic` + `cloudflared` | Low |
+| 4 | systemd hardening (`mosaic` non-root + memory limit) | Low |
+| 5 | Tight Pi `.env` (see above) | Low |
+| 6 | Cloudflare WAF/Bot protections | Medium |
 | 7 | CAPTCHA on upload | Medium |
 | 8 | Monitoring / alerts | Medium |
 
@@ -263,11 +319,11 @@ Absorbs volumetric traffic before it hits the Pi.
 
 | Threat | Mitigation |
 | --- | --- |
-| CPU exhaustion (many uploads) | App rate limit + concurrency cap + proxy limits |
+| CPU exhaustion (many uploads) | App rate limit + concurrency cap + Cloudflare WAF rate limits |
 | Memory exhaustion (huge images) | Dimension + file size caps |
 | Expensive tileSize abuse | Server-side 5–100 bounds |
 | Stored user photos | Not stored (in-memory only) |
-| MITM | TLS via Caddy/Nginx |
+| MITM | HTTPS at Cloudflare edge; optional strict origin TLS in direct-origin mode |
 | Direct port scanning | Firewall; app on localhost only |
 | Bot floods | Rate limit → CAPTCHA → Cloudflare |
 | Pi crash from one bad request | systemd `MemoryMax`, `MAX_CONCURRENT_GENERATIONS=1` |
