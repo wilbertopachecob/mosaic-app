@@ -4,6 +4,12 @@ run:
   timeout: 5m
 
 linters:
+  settings:
+    errcheck:
+      exclude-functions:
+        - (io.Closer).Close
+        - (*os.File).Close
+        - os.RemoveAll
   exclusions:
     paths:
       - frontend/

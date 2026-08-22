@@ -113,7 +113,7 @@ func runCLI(cfg cliConfig) error {
 	if err != nil {
 		return fmt.Errorf("open input image: %w", err)
 	}
-	defer func() { _ = in.Close() }()
+	defer in.Close()
 
 	target, _, err := image.Decode(in)
 	if err != nil {

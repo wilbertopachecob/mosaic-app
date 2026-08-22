@@ -88,7 +88,7 @@ func processImageFile(filePath string, db map[string][3]float64) error {
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
 	}
-	defer func() { _ = file.Close() }()
+	defer file.Close()
 
 	// Decode the image
 	img, format, err := image.Decode(file)

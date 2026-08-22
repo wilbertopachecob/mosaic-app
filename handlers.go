@@ -107,7 +107,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "invalid_request", "Missing image upload")
 		return
 	}
-	defer func() { _ = file.Close() }()
+	defer file.Close()
 
 	if header.Size > cfg.MaxFileSize {
 		writeJSONError(w, http.StatusBadRequest, "file_too_large", fmt.Sprintf("File exceeds maximum size of %d bytes", cfg.MaxFileSize))

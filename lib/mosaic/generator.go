@@ -194,7 +194,7 @@ func loadImage(path string) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = f.Close() }()
+	defer f.Close()
 
 	// image.Decode returns (Image, format, error)
 	decoded, _, err := image.Decode(f)
