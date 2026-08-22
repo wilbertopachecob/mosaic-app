@@ -1,6 +1,8 @@
 module wilbertopachecob/mosaic
 
-go 1.23
+go 1.26
+
+toolchain go1.26.7
 
 require (
 	github.com/joho/godotenv v1.5.1

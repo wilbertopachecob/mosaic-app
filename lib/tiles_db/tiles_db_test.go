@@ -75,7 +75,7 @@ func TestTilesDBWithEmptyDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Note: In a real implementation, you might want to make the tiles directory configurable
 	// For this test, we'll just verify the function handles empty directories gracefully

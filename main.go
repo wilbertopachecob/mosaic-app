@@ -113,7 +113,7 @@ func runCLI(cfg cliConfig) error {
 	if err != nil {
 		return fmt.Errorf("open input image: %w", err)
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 
 	target, _, err := image.Decode(in)
 	if err != nil {
@@ -157,12 +157,16 @@ func defaultOutputPath(inputPath string) string {
 	return filepath.Join(filepath.Dir(inputPath), base+"_mosaic"+ext)
 }
 
-func writeImage(path string, img image.Image, jpegQuality int) error {
+func writeImage(path string, img image.Image, jpegQuality int) (err error) {
 	f, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("create output image: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("close output image: %w", cerr)
+		}
+	}()
 
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".png":

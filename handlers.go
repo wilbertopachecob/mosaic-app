@@ -41,10 +41,12 @@ func configureServer(cfg *config.Config, generator *mosaic.Generator) {
 func writeJSONError(w http.ResponseWriter, status int, errKey, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(errorResponse{
+	if err := json.NewEncoder(w).Encode(errorResponse{
 		Error:   errKey,
 		Message: message,
-	})
+	}); err != nil {
+		log.Printf("failed to encode error response: %v", err)
+	}
 }
 
 func serverErrorMessage(err error) string {
@@ -105,7 +107,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "invalid_request", "Missing image upload")
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	if header.Size > cfg.MaxFileSize {
 		writeJSONError(w, http.StatusBadRequest, "file_too_large", fmt.Sprintf("File exceeds maximum size of %d bytes", cfg.MaxFileSize))
@@ -149,7 +151,9 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		Format:    "jpeg",
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("failed to encode upload response: %v", err)
+	}
 }
 
 // healthHandler provides health check endpoint
@@ -159,5 +163,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 		"service": "mosaic-app",
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("failed to encode health response: %v", err)
+	}
 }
