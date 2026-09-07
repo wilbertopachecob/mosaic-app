@@ -226,7 +226,7 @@ make production
 
 ### For All Scripts
 - Bash shell
-- Go 1.22+
+- Go 1.26+
 - Node.js 18+
 - npm
 

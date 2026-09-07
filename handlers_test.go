@@ -103,10 +103,11 @@ func TestUploadHandlerWithInvalidTileSize(t *testing.T) {
 
 	part, err := writer.CreateFormFile("imgUpload", "test.jpg")
 	require.NoError(t, err)
-	part.Write(imgBytes)
+	_, err = part.Write(imgBytes)
+	require.NoError(t, err)
 
-	writer.WriteField("tileSize", "invalid")
-	writer.Close()
+	require.NoError(t, writer.WriteField("tileSize", "invalid"))
+	require.NoError(t, writer.Close())
 
 	req, err := http.NewRequest("POST", "/api/file/upload", body)
 	require.NoError(t, err)
@@ -128,9 +129,10 @@ func TestUploadHandlerRejectsOutOfRangeTileSize(t *testing.T) {
 			writer := multipart.NewWriter(body)
 			part, err := writer.CreateFormFile("imgUpload", "test.jpg")
 			require.NoError(t, err)
-			part.Write(imgBytes)
-			writer.WriteField("tileSize", tileSize)
-			writer.Close()
+			_, err = part.Write(imgBytes)
+			require.NoError(t, err)
+			require.NoError(t, writer.WriteField("tileSize", tileSize))
+			require.NoError(t, writer.Close())
 
 			req, err := http.NewRequest("POST", "/api/file/upload", body)
 			require.NoError(t, err)
@@ -155,10 +157,11 @@ func TestUploadHandlerRejectsInvalidBlend(t *testing.T) {
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("imgUpload", "test.jpg")
 	require.NoError(t, err)
-	part.Write(imgBytes)
-	writer.WriteField("tileSize", "20")
-	writer.WriteField("blend", "2")
-	writer.Close()
+	_, err = part.Write(imgBytes)
+	require.NoError(t, err)
+	require.NoError(t, writer.WriteField("tileSize", "20"))
+	require.NoError(t, writer.WriteField("blend", "2"))
+	require.NoError(t, writer.Close())
 
 	req, err := http.NewRequest("POST", "/api/file/upload", body)
 	require.NoError(t, err)
@@ -188,9 +191,10 @@ func TestUploadHandlerRejectsOversizedImage(t *testing.T) {
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("imgUpload", "test.jpg")
 	require.NoError(t, err)
-	part.Write(imgBytes)
-	writer.WriteField("tileSize", "20")
-	writer.Close()
+	_, err = part.Write(imgBytes)
+	require.NoError(t, err)
+	require.NoError(t, writer.WriteField("tileSize", "20"))
+	require.NoError(t, writer.Close())
 
 	req, err := http.NewRequest("POST", "/api/file/upload", body)
 	require.NoError(t, err)
@@ -220,8 +224,9 @@ func TestUploadHandlerRejectsOversizedBody(t *testing.T) {
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("imgUpload", "big.jpg")
 	require.NoError(t, err)
-	part.Write(bytes.Repeat([]byte("A"), 2<<20)) // 2MB of payload
-	writer.Close()
+	_, err = part.Write(bytes.Repeat([]byte("A"), 2<<20)) // 2MB of payload
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
 	require.Greater(t, body.Len(), int(appConfig.MaxFileSize)+(1<<20))
 
 	req, err := http.NewRequest("POST", "/api/file/upload", body)
@@ -262,11 +267,12 @@ func TestUploadHandlerWithValidRequest(t *testing.T) {
 
 	part, err := writer.CreateFormFile("imgUpload", "test.jpg")
 	require.NoError(t, err)
-	part.Write(imgBytes)
+	_, err = part.Write(imgBytes)
+	require.NoError(t, err)
 
-	writer.WriteField("tileSize", "20")
-	writer.WriteField("blend", "0.55")
-	writer.Close()
+	require.NoError(t, writer.WriteField("tileSize", "20"))
+	require.NoError(t, writer.WriteField("blend", "0.55"))
+	require.NoError(t, writer.Close())
 
 	req, err := http.NewRequest("POST", "/api/file/upload", body)
 	require.NoError(t, err)

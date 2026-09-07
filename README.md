@@ -17,8 +17,8 @@ The current generator uses average-color matching, bilinear tile resizing, per-t
 
 ### Prerequisites
 
-- Go 1.23+
-- Node.js 18+ and npm
+- Go 1.26+ (see `.go-version`)
+- Node.js 24+ (see `.nvmrc`) and npm
 - A tile image library in `tiles/`
 
 ### Install

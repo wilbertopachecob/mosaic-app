@@ -62,35 +62,44 @@ func TestGenerator_LoadTiles_EmptyDir(t *testing.T) {
 	}
 }
 
+func writeJPEGFile(t *testing.T, path string, img image.Image) {
+	t.Helper()
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("create %s: %v", path, err)
+	}
+	if err := jpeg.Encode(f, img, nil); err != nil {
+		_ = f.Close()
+		t.Fatalf("encode %s: %v", path, err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("close %s: %v", path, err)
+	}
+}
+
+func writePNGFile(t *testing.T, path string, img image.Image) {
+	t.Helper()
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("create %s: %v", path, err)
+	}
+	if err := png.Encode(f, img); err != nil {
+		_ = f.Close()
+		t.Fatalf("encode %s: %v", path, err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("close %s: %v", path, err)
+	}
+}
+
 func TestGenerator_LoadTiles_WithImages(t *testing.T) {
 	dir := t.TempDir()
 
-	// Write a small JPEG
-	redImg := createTestImage(10, 10, color.RGBA{255, 0, 0, 255})
-	f, err := os.Create(filepath.Join(dir, "red.jpg"))
-	if err != nil {
-		t.Fatalf("create red.jpg: %v", err)
-	}
-	if err := jpeg.Encode(f, redImg, nil); err != nil {
-		f.Close()
-		t.Fatalf("encode red.jpg: %v", err)
-	}
-	f.Close()
-
-	// Write a small PNG
-	blueImg := createTestImage(10, 10, color.RGBA{0, 0, 255, 255})
-	f2, err := os.Create(filepath.Join(dir, "blue.png"))
-	if err != nil {
-		t.Fatalf("create blue.png: %v", err)
-	}
-	if err := png.Encode(f2, blueImg); err != nil {
-		f2.Close()
-		t.Fatalf("encode blue.png: %v", err)
-	}
-	f2.Close()
+	writeJPEGFile(t, filepath.Join(dir, "red.jpg"), createTestImage(10, 10, color.RGBA{255, 0, 0, 255}))
+	writePNGFile(t, filepath.Join(dir, "blue.png"), createTestImage(10, 10, color.RGBA{0, 0, 255, 255}))
 
 	g := NewGenerator()
-	err = g.LoadTiles(dir)
+	err := g.LoadTiles(dir)
 	if err != nil {
 		t.Fatalf("LoadTiles: %v", err)
 	}
@@ -102,16 +111,7 @@ func TestGenerator_LoadTiles_WithImages(t *testing.T) {
 func TestGenerator_LoadTiles_PrefersPhotoTilesOverColorSwatches(t *testing.T) {
 	dir := t.TempDir()
 
-	colorTile := createTestImage(10, 10, color.RGBA{255, 0, 0, 255})
-	f, err := os.Create(filepath.Join(dir, "color_red.jpg"))
-	if err != nil {
-		t.Fatalf("create color tile: %v", err)
-	}
-	if err := jpeg.Encode(f, colorTile, nil); err != nil {
-		f.Close()
-		t.Fatalf("encode color tile: %v", err)
-	}
-	f.Close()
+	writeJPEGFile(t, filepath.Join(dir, "color_red.jpg"), createTestImage(10, 10, color.RGBA{255, 0, 0, 255}))
 
 	for i := 0; i < 8; i++ {
 		photoTile := image.NewRGBA(image.Rect(0, 0, 10, 10))
@@ -124,17 +124,7 @@ func TestGenerator_LoadTiles_PrefersPhotoTilesOverColorSwatches(t *testing.T) {
 				}
 			}
 		}
-
-		path := filepath.Join(dir, fmt.Sprintf("photo_%d.jpg", i))
-		f, err := os.Create(path)
-		if err != nil {
-			t.Fatalf("create photo tile: %v", err)
-		}
-		if err := jpeg.Encode(f, photoTile, nil); err != nil {
-			f.Close()
-			t.Fatalf("encode photo tile: %v", err)
-		}
-		f.Close()
+		writeJPEGFile(t, filepath.Join(dir, fmt.Sprintf("photo_%d.jpg", i)), photoTile)
 	}
 
 	g := NewGenerator()
@@ -149,22 +139,11 @@ func TestGenerator_LoadTiles_PrefersPhotoTilesOverColorSwatches(t *testing.T) {
 func TestGenerator_Generate_WithTiles(t *testing.T) {
 	dir := t.TempDir()
 
-	// Create two tile images
 	for i, c := range []color.RGBA{
 		{255, 0, 0, 255},
 		{0, 255, 0, 255},
 	} {
-		img := createTestImage(20, 20, c)
-		path := filepath.Join(dir, fmt.Sprintf("tile%d.jpg", i))
-		f, err := os.Create(path)
-		if err != nil {
-			t.Fatalf("create tile: %v", err)
-		}
-		if err := jpeg.Encode(f, img, nil); err != nil {
-			f.Close()
-			t.Fatalf("encode tile: %v", err)
-		}
-		f.Close()
+		writeJPEGFile(t, filepath.Join(dir, fmt.Sprintf("tile%d.jpg", i)), createTestImage(20, 20, c))
 	}
 
 	g := NewGenerator()
@@ -186,16 +165,7 @@ func TestGenerator_Generate_WithTiles(t *testing.T) {
 
 func TestGenerator_GenerateWithOptions_SourceBlend(t *testing.T) {
 	dir := t.TempDir()
-	tile := createTestImage(10, 10, color.RGBA{0, 0, 255, 255})
-	f, err := os.Create(filepath.Join(dir, "blue.jpg"))
-	if err != nil {
-		t.Fatalf("create tile: %v", err)
-	}
-	if err := jpeg.Encode(f, tile, nil); err != nil {
-		f.Close()
-		t.Fatalf("encode tile: %v", err)
-	}
-	f.Close()
+	writeJPEGFile(t, filepath.Join(dir, "blue.jpg"), createTestImage(10, 10, color.RGBA{0, 0, 255, 255}))
 
 	g := NewGenerator()
 	if err := g.LoadTiles(dir); err != nil {
@@ -224,13 +194,12 @@ func TestGenerator_GenerateWithOptions_SourceBlend(t *testing.T) {
 
 func TestGenerator_Generate_TileSizeClamped(t *testing.T) {
 	dir := t.TempDir()
-	img := createTestImage(5, 5, color.RGBA{128, 128, 128, 255})
-	f, _ := os.Create(filepath.Join(dir, "t.jpg"))
-	jpeg.Encode(f, img, nil)
-	f.Close()
+	writeJPEGFile(t, filepath.Join(dir, "t.jpg"), createTestImage(5, 5, color.RGBA{128, 128, 128, 255}))
 
 	g := NewGenerator()
-	g.LoadTiles(dir)
+	if err := g.LoadTiles(dir); err != nil {
+		t.Fatalf("LoadTiles: %v", err)
+	}
 	target := createTestImage(10, 10, color.RGBA{128, 128, 128, 255})
 
 	// tileSize 0 should be clamped to 1
